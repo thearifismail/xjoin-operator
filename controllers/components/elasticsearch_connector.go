@@ -31,7 +31,7 @@ func (es ElasticsearchConnector) Name() string {
 func (es ElasticsearchConnector) Create() (err error) {
 	m := es.TemplateParameters
 	m["Topic"] = es.Topic
-	// m["RenameTopicReplacement"] = fmt.Sprintf("%s.%s", kafka.Parameters.ResourceNamePrefix.String(), pipelineVersion)
+	// m["RenameTopicReplacement"] = fmt.Sprintf("%s.%s", kafka.Parameters.ResourceNamePrefix.String(), synchronizerVersion)
 
 	err = es.KafkaClient.CreateGenericElasticsearchConnector(es.Name(), es.Template, m)
 	if err != nil {

@@ -104,9 +104,9 @@ rules:
 - apiGroups:
   - xjoin.cloud.redhat.com
   resources:
-  - xjoindatasourcepipelines
-  - xjoindatasourcepipelines/finalizers
-  - xjoindatasourcepipelines/status
+  - xjoindatasourcesynchronizers
+  - xjoindatasourcesynchronizers/finalizers
+  - xjoindatasourcesynchronizers/status
   verbs:
   - create
   - delete
@@ -132,9 +132,9 @@ rules:
 - apiGroups:
   - xjoin.cloud.redhat.com
   resources:
-  - xjoinindexpipelines
-  - xjoinindexpipelines/finalizers
-  - xjoinindexpipelines/status
+  - xjoinindexsynchronizers
+  - xjoinindexsynchronizers/finalizers
+  - xjoinindexsynchronizers/status
   verbs:
   - create
   - delete
@@ -174,9 +174,9 @@ rules:
 - apiGroups:
   - xjoin.cloud.redhat.com
   resources:
-  - xjoinpipelines
-  - xjoinpipelines/finalizers
-  - xjoinpipelines/status
+  - xjoinsynchronizers
+  - xjoinsynchronizers/finalizers
+  - xjoinsynchronizers/status
   verbs:
   - create
   - delete

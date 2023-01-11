@@ -152,33 +152,33 @@ func (r *XJoinIndexReconciler) Reconcile(ctx context.Context, request ctrl.Reque
 		return reconcile.Result{}, errors.Wrap(err, 0)
 	}
 
-	// check status of active and refreshing IndexPipelines, update instance.Status accordingly
+	// check status of active and refreshing IndexSynchronizers, update instance.Status accordingly
 	if instance.Status.ActiveVersion != "" {
-		indexPipelineNamespacedName := types.NamespacedName{
+		indexSynchronizerNamespacedName := types.NamespacedName{
 			Name:      i.Instance.GetName() + "." + instance.Status.ActiveVersion,
 			Namespace: i.Instance.GetNamespace(),
 		}
 
-		activeIndexPipeline, err := k8sUtils.FetchXJoinIndexPipeline(i.Client, indexPipelineNamespacedName, i.Context)
+		activeIndexSynchronizer, err := k8sUtils.FetchXJoinIndexSynchronizer(i.Client, indexSynchronizerNamespacedName, i.Context)
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err, 0)
 		}
 
-		instance.Status.ActiveVersionIsValid = activeIndexPipeline.Status.ValidationResponse.Result == "valid"
+		instance.Status.ActiveVersionIsValid = activeIndexSynchronizer.Status.ValidationResponse.Result == "valid"
 	}
 
 	if instance.Status.RefreshingVersion != "" {
-		indexPipelineNamespacedName := types.NamespacedName{
+		indexSynchronizerNamespacedName := types.NamespacedName{
 			Name:      i.Instance.GetName() + "." + instance.Status.RefreshingVersion,
 			Namespace: i.Instance.GetNamespace(),
 		}
 
-		refreshingIndexPipeline, err := k8sUtils.FetchXJoinIndexPipeline(i.Client, indexPipelineNamespacedName, i.Context)
+		refreshingIndexSynchronizer, err := k8sUtils.FetchXJoinIndexSynchronizer(i.Client, indexSynchronizerNamespacedName, i.Context)
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err, 0)
 		}
 
-		instance.Status.RefreshingVersionIsValid = refreshingIndexPipeline.Status.ValidationResponse.Result == "valid"
+		instance.Status.RefreshingVersionIsValid = refreshingIndexSynchronizer.Status.ValidationResponse.Result == "valid"
 	}
 
 	// force refresh if datasource is updated

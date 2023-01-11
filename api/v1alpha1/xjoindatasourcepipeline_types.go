@@ -4,7 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type XJoinDataSourcePipelineSpec struct {
+type XJoinDataSourceSynchronizerSpec struct {
 	// +kubebuilder:validation:Required
 	Name string `json:"name,omitempty"`
 
@@ -36,29 +36,29 @@ type XJoinDataSourcePipelineSpec struct {
 	Pause bool `json:"pause,omitempty"`
 }
 
-type XJoinDataSourcePipelineStatus struct {
+type XJoinDataSourceSynchronizerStatus struct {
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:shortName=xjoindatasourcepipeline,categories=all
+// +kubebuilder:resource:shortName=xjoindatasourcesynchronizer,categories=all
 
-type XJoinDataSourcePipeline struct {
+type XJoinDataSourceSynchronizer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   XJoinDataSourcePipelineSpec   `json:"spec,omitempty"`
-	Status XJoinDataSourcePipelineStatus `json:"status,omitempty"`
+	Spec   XJoinDataSourceSynchronizerSpec   `json:"spec,omitempty"`
+	Status XJoinDataSourceSynchronizerStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-type XJoinDataSourcePipelineList struct {
+type XJoinDataSourceSynchronizerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []XJoinDataSourcePipeline `json:"items"`
+	Items           []XJoinDataSourceSynchronizer `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&XJoinDataSourcePipeline{}, &XJoinDataSourcePipelineList{})
+	SchemeBuilder.Register(&XJoinDataSourceSynchronizer{}, &XJoinDataSourceSynchronizerList{})
 }

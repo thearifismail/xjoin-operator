@@ -6,36 +6,36 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-type IndexPipelineChild struct {
+type IndexSynchronizerChild struct {
 	iteration *XJoinIndexIteration
 }
 
-func NewIndexPipelineChild(iteration *XJoinIndexIteration) *IndexPipelineChild {
-	return &IndexPipelineChild{
+func NewIndexSynchronizerChild(iteration *XJoinIndexIteration) *IndexSynchronizerChild {
+	return &IndexSynchronizerChild{
 		iteration: iteration,
 	}
 }
 
-func (d *IndexPipelineChild) GetParentInstance() common.XJoinObject {
+func (d *IndexSynchronizerChild) GetParentInstance() common.XJoinObject {
 	return d.iteration.GetInstance()
 }
 
-func (d *IndexPipelineChild) Create(version string) (err error) {
-	err = d.iteration.CreateIndexPipeline(d.iteration.GetInstance().GetName(), version)
+func (d *IndexSynchronizerChild) Create(version string) (err error) {
+	err = d.iteration.CreateIndexSynchronizer(d.iteration.GetInstance().GetName(), version)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
 	return
 }
 
-func (d *IndexPipelineChild) Delete(version string) (err error) {
-	err = d.iteration.DeleteIndexPipeline(d.iteration.GetInstance().GetName(), version)
+func (d *IndexSynchronizerChild) Delete(version string) (err error) {
+	err = d.iteration.DeleteIndexSynchronizer(d.iteration.GetInstance().GetName(), version)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
 	return
 }
 
-func (d *IndexPipelineChild) GetGVK() (gvk schema.GroupVersionKind) {
-	return common.IndexPipelineGVK
+func (d *IndexSynchronizerChild) GetGVK() (gvk schema.GroupVersionKind) {
+	return common.IndexSynchronizerGVK
 }

@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
+
 	"github.com/go-errors/errors"
 	"github.com/redhatinsights/xjoin-go-lib/pkg/utils"
 	xjoin "github.com/redhatinsights/xjoin-operator/api/v1alpha1"
 	logger "github.com/redhatinsights/xjoin-operator/controllers/log"
-	"hash/fnv"
 	corev1 "k8s.io/api/core/v1"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,14 +19,14 @@ import (
 
 var log = logger.NewLogger("k8s")
 
-func FetchXJoinPipeline(c client.Client, namespacedName types.NamespacedName, ctx context.Context) (*xjoin.XJoinPipeline, error) {
-	instance := &xjoin.XJoinPipeline{}
+func FetchXJoinSynchronizer(c client.Client, namespacedName types.NamespacedName, ctx context.Context) (*xjoin.XJoinSynchronizer, error) {
+	instance := &xjoin.XJoinSynchronizer{}
 	err := c.Get(ctx, namespacedName, instance)
 	return instance, err
 }
 
-func FetchXJoinDataSourcePipeline(c client.Client, namespacedName types.NamespacedName, ctx context.Context) (*xjoin.XJoinDataSourcePipeline, error) {
-	instance := &xjoin.XJoinDataSourcePipeline{}
+func FetchXJoinDataSourceSynchronizer(c client.Client, namespacedName types.NamespacedName, ctx context.Context) (*xjoin.XJoinDataSourceSynchronizer, error) {
+	instance := &xjoin.XJoinDataSourceSynchronizer{}
 	err := c.Get(ctx, namespacedName, instance)
 	return instance, err
 }
@@ -48,8 +49,8 @@ func FetchXJoinIndexes(c client.Client, ctx context.Context) (*xjoin.XJoinIndexL
 	return list, err
 }
 
-func FetchXJoinIndexPipeline(c client.Client, namespacedName types.NamespacedName, ctx context.Context) (*xjoin.XJoinIndexPipeline, error) {
-	instance := &xjoin.XJoinIndexPipeline{}
+func FetchXJoinIndexSynchronizer(c client.Client, namespacedName types.NamespacedName, ctx context.Context) (*xjoin.XJoinIndexSynchronizer, error) {
+	instance := &xjoin.XJoinIndexSynchronizer{}
 	err := c.Get(ctx, namespacedName, instance)
 	return instance, err
 }
@@ -60,8 +61,8 @@ func FetchXJoinIndexValidator(c client.Client, namespacedName types.NamespacedNa
 	return instance, err
 }
 
-func FetchXJoinPipelines(c client.Client, ctx context.Context) (*xjoin.XJoinPipelineList, error) {
-	list := &xjoin.XJoinPipelineList{}
+func FetchXJoinSynchronizers(c client.Client, ctx context.Context) (*xjoin.XJoinSynchronizerList, error) {
+	list := &xjoin.XJoinSynchronizerList{}
 	err := c.List(ctx, list)
 	return list, err
 }

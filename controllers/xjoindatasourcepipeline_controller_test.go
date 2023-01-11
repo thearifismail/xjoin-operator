@@ -15,7 +15,7 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-var _ = Describe("XJoinDataSourcePipeline", func() {
+var _ = Describe("XJoinDataSourceSynchronizer", func() {
 	var namespace string
 
 	BeforeEach(func() {
@@ -32,27 +32,27 @@ var _ = Describe("XJoinDataSourcePipeline", func() {
 	})
 
 	Context("Reconcile", func() {
-		It("Should add a finalizer to the datasourcepipeline", func() {
-			reconciler := DatasourcePipelineTestReconciler{
+		It("Should add a finalizer to the datasourcesynchronizer", func() {
+			reconciler := DatasourceSynchronizerTestReconciler{
 				Namespace: namespace,
-				Name:      "test-data-source-pipeline",
+				Name:      "test-data-source-synchronizer",
 				K8sClient: k8sClient,
 			}
-			createdDataSourcePipeline := reconciler.ReconcileNew()
-			Expect(createdDataSourcePipeline.Finalizers).To(HaveLen(1))
-			Expect(createdDataSourcePipeline.Finalizers).To(ContainElement("finalizer.xjoin.datasourcepipeline.cloud.redhat.com"))
+			createdDataSourceSynchronizer := reconciler.ReconcileNew()
+			Expect(createdDataSourceSynchronizer.Finalizers).To(HaveLen(1))
+			Expect(createdDataSourceSynchronizer.Finalizers).To(ContainElement("finalizer.xjoin.datasourcesynchronizer.cloud.redhat.com"))
 		})
 
 		It("Creates a Debezium Kafka Connector", func() {
-			reconciler := DatasourcePipelineTestReconciler{
+			reconciler := DatasourceSynchronizerTestReconciler{
 				Namespace: namespace,
-				Name:      "test-data-source-pipeline",
+				Name:      "test-data-source-synchronizer",
 				K8sClient: k8sClient,
 			}
 			reconciler.ReconcileNew()
 
 			ctx := context.Background()
-			debeziumConnectorName := "xjoindatasourcepipeline.test-data-source-pipeline.1234"
+			debeziumConnectorName := "xjoindatasourcesynchronizer.test-data-source-synchronizer.1234"
 			debeziumConnectorLookupKey := types.NamespacedName{Name: debeziumConnectorName, Namespace: namespace}
 			debeziumConnector := &v1beta2.KafkaConnector{}
 
@@ -84,9 +84,9 @@ var _ = Describe("XJoinDataSourcePipeline", func() {
 		})
 
 		It("Creates an Avro Schema", func() {
-			reconciler := DatasourcePipelineTestReconciler{
+			reconciler := DatasourceSynchronizerTestReconciler{
 				Namespace: namespace,
-				Name:      "test-data-source-pipeline",
+				Name:      "test-data-source-synchronizer",
 				K8sClient: k8sClient,
 			}
 			reconciler.ReconcileNew()
@@ -94,26 +94,26 @@ var _ = Describe("XJoinDataSourcePipeline", func() {
 			//TODO validate the body of the request is correct
 			//validates the correct API calls were made
 			info := httpmock.GetCallCountInfo()
-			count := info["POST http://apicurio:1080/apis/ccompat/v6/subjects/xjoindatasourcepipeline.test-data-source-pipeline.1234-value/versions"]
+			count := info["POST http://apicurio:1080/apis/ccompat/v6/subjects/xjoindatasourcesynchronizer.test-data-source-synchronizer.1234-value/versions"]
 			Expect(count).To(Equal(1))
 
-			count = info["GET http://apicurio:1080/apis/ccompat/v6/subjects/xjoindatasourcepipeline.test-data-source-pipeline.1234-value/versions/1"]
+			count = info["GET http://apicurio:1080/apis/ccompat/v6/subjects/xjoindatasourcesynchronizer.test-data-source-synchronizer.1234-value/versions/1"]
 			Expect(count).To(Equal(1))
 
-			count = info["GET http://apicurio:1080/apis/ccompat/v6/subjects/xjoindatasourcepipeline.test-data-source-pipeline.1234-value/versions/latest"]
+			count = info["GET http://apicurio:1080/apis/ccompat/v6/subjects/xjoindatasourcesynchronizer.test-data-source-synchronizer.1234-value/versions/latest"]
 			Expect(count).To(Equal(1))
 		})
 
 		It("Creates a Kafka Topic", func() {
-			reconciler := DatasourcePipelineTestReconciler{
+			reconciler := DatasourceSynchronizerTestReconciler{
 				Namespace: namespace,
-				Name:      "test-data-source-pipeline",
+				Name:      "test-data-source-synchronizer",
 				K8sClient: k8sClient,
 			}
 			reconciler.ReconcileNew()
 
 			ctx := context.Background()
-			kafkaTopicName := "xjoindatasourcepipeline.test-data-source-pipeline.1234"
+			kafkaTopicName := "xjoindatasourcesynchronizer.test-data-source-synchronizer.1234"
 			kafkaTopicLookupKey := types.NamespacedName{Name: kafkaTopicName, Namespace: namespace}
 			kafkaTopic := &v1beta2.KafkaTopic{}
 
@@ -150,25 +150,25 @@ var _ = Describe("XJoinDataSourcePipeline", func() {
 
 	Context("Reconcile Deletion", func() {
 		It("Deletes the Debezium Kafka Connector", func() {
-			name := "test-data-source-pipeline"
-			reconciler := DatasourcePipelineTestReconciler{
+			name := "test-data-source-synchronizer"
+			reconciler := DatasourceSynchronizerTestReconciler{
 				Namespace: namespace,
 				Name:      name,
 				K8sClient: k8sClient,
 			}
-			createdDataSourcePipeline := reconciler.ReconcileNew()
+			createdDataSourceSynchronizer := reconciler.ReconcileNew()
 
 			connectors := &v1beta2.KafkaConnectorList{}
 			err := k8sClient.List(context.Background(), connectors, client.InNamespace(namespace))
 			checkError(err)
 			Expect(connectors.Items).To(HaveLen(1))
 
-			err = k8sClient.Delete(context.Background(), &createdDataSourcePipeline)
+			err = k8sClient.Delete(context.Background(), &createdDataSourceSynchronizer)
 			checkError(err)
 			reconciler.ReconcileDelete()
 
 			info := httpmock.GetCallCountInfo()
-			count := info["GET http://connect-connect-api."+namespace+".svc:8083/connectors/xjoindatasourcepipeline."+name+".1234"]
+			count := info["GET http://connect-connect-api."+namespace+".svc:8083/connectors/xjoindatasourcesynchronizer."+name+".1234"]
 			Expect(count).To(Equal(6))
 
 			connectors = &v1beta2.KafkaConnectorList{}
@@ -178,38 +178,38 @@ var _ = Describe("XJoinDataSourcePipeline", func() {
 		})
 
 		It("Deletes the Avro Schema", func() {
-			name := "test-data-source-pipeline"
-			reconciler := DatasourcePipelineTestReconciler{
+			name := "test-data-source-synchronizer"
+			reconciler := DatasourceSynchronizerTestReconciler{
 				Namespace: namespace,
 				Name:      name,
 				K8sClient: k8sClient,
 			}
-			createdDataSourcePipeline := reconciler.ReconcileNew()
+			createdDataSourceSynchronizer := reconciler.ReconcileNew()
 
-			err := k8sClient.Delete(context.Background(), &createdDataSourcePipeline)
+			err := k8sClient.Delete(context.Background(), &createdDataSourceSynchronizer)
 			checkError(err)
 			reconciler.ReconcileDelete()
 
 			info := httpmock.GetCallCountInfo()
-			count := info["DELETE http://apicurio:1080/apis/ccompat/v6/subjects/xjoindatasourcepipeline."+name+".1234-value"]
+			count := info["DELETE http://apicurio:1080/apis/ccompat/v6/subjects/xjoindatasourcesynchronizer."+name+".1234-value"]
 			Expect(count).To(Equal(1))
 		})
 
 		It("Deletes the Kafka Topic", func() {
-			name := "test-data-source-pipeline"
-			reconciler := DatasourcePipelineTestReconciler{
+			name := "test-data-source-synchronizer"
+			reconciler := DatasourceSynchronizerTestReconciler{
 				Namespace: namespace,
 				Name:      name,
 				K8sClient: k8sClient,
 			}
-			createdDataSourcePipeline := reconciler.ReconcileNew()
+			createdDataSourceSynchronizer := reconciler.ReconcileNew()
 
 			topics := &v1beta2.KafkaTopicList{}
 			err := k8sClient.List(context.Background(), topics, client.InNamespace(namespace))
 			checkError(err)
 			Expect(topics.Items).To(HaveLen(1))
 
-			err = k8sClient.Delete(context.Background(), &createdDataSourcePipeline)
+			err = k8sClient.Delete(context.Background(), &createdDataSourceSynchronizer)
 			checkError(err)
 			reconciler.ReconcileDelete()
 

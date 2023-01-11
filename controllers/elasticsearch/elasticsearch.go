@@ -4,23 +4,24 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/go-errors/errors"
 	logger "github.com/redhatinsights/xjoin-operator/controllers/log"
-	"io/ioutil"
-	"net/http"
-	"strconv"
 )
 
 var log = logger.NewLogger("elasticsearch")
 
 type ElasticSearch struct {
-	Client             *elasticsearch.Client
-	resourceNamePrefix string
-	pipelineTemplate   string
-	parametersMap      map[string]interface{}
-	indexTemplate      string
+	Client               *elasticsearch.Client
+	resourceNamePrefix   string
+	synchronizerTemplate string
+	parametersMap        map[string]interface{}
+	indexTemplate        string
 }
 
 func NewElasticSearch(
@@ -28,13 +29,13 @@ func NewElasticSearch(
 	username string,
 	password string,
 	resourceNamePrefix string,
-	pipelineTemplate string,
+	synchronizerTemplate string,
 	indexTemplate string,
 	parametersMap map[string]interface{}) (*ElasticSearch, error) {
 
 	es := new(ElasticSearch)
 	es.resourceNamePrefix = resourceNamePrefix
-	es.pipelineTemplate = pipelineTemplate
+	es.synchronizerTemplate = synchronizerTemplate
 	es.parametersMap = parametersMap
 	es.indexTemplate = indexTemplate
 

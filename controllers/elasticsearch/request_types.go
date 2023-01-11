@@ -54,14 +54,14 @@ type QueryHostIDsRange struct {
 	} `json:"query"`
 }
 
-type PipelineProcessor struct {
+type SynchronizerProcessor struct {
 	Json struct {
 		If    string `json:"if,omitempty"`
 		Field string `json:"field,omitempty"`
 	} `json:"json,omitempty"`
 }
 
-type Pipeline struct {
-	Description string              `json:"description,omitempty"`
-	Processors  []PipelineProcessor `json:"processors,omitempty"`
+type Synchronizer struct {
+	Description string                  `json:"description,omitempty"`
+	Processors  []SynchronizerProcessor `json:"processors,omitempty"`
 }

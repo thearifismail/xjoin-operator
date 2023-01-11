@@ -39,7 +39,7 @@ var ResourceNamePrefix = "xjointest"
 
 type Iteration struct {
 	NamespacedName         types.NamespacedName
-	XJoinReconciler        *controllers.XJoinPipelineReconciler
+	XJoinReconciler        *controllers.XJoinSynchronizerReconciler
 	ValidationReconciler   *controllers.ValidationReconciler
 	KafkaConnectReconciler *controllers.KafkaConnectReconciler
 	EsClient               *elasticsearch.ElasticSearch
@@ -49,7 +49,7 @@ type Iteration struct {
 	Parameters             xjoinconfig.Parameters
 	ParametersMap          map[string]interface{}
 	DbClient               *database.Database
-	Pipelines              []*xjoin.XJoinPipeline
+	Synchronizers          []*xjoin.XJoinSynchronizer
 	Now                    time.Time
 }
 
@@ -322,8 +322,8 @@ func (i *Iteration) ScaleDeployment(name string, namespace string, replicas int)
 	return nil
 }
 
-func (i *Iteration) EditESConnectorToBeInvalid(pipelineVersion string) error {
-	connector, err := i.KafkaClient.GetConnector(i.KafkaConnectors.ESConnectorName(pipelineVersion))
+func (i *Iteration) EditESConnectorToBeInvalid(synchronizerVersion string) error {
+	connector, err := i.KafkaClient.GetConnector(i.KafkaConnectors.ESConnectorName(synchronizerVersion))
 	if err != nil {
 		return err
 	}
@@ -339,15 +339,15 @@ func (i *Iteration) EditESConnectorToBeInvalid(pipelineVersion string) error {
 	return err
 }
 
-func (i *Iteration) TestSpecFieldChangedForPipeline(
-	pipeline *xjoin.XJoinPipeline,
+func (i *Iteration) TestSpecFieldChangedForSynchronizer(
+	synchronizer *xjoin.XJoinSynchronizer,
 	fieldName string,
 	fieldValue interface{},
 	valueType reflect.Kind) error {
 
-	activeIndex := pipeline.Status.ActiveIndexName
+	activeIndex := synchronizer.Status.ActiveIndexName
 
-	s := reflect.ValueOf(&pipeline.Spec).Elem()
+	s := reflect.ValueOf(&synchronizer.Spec).Elem()
 	field := s.FieldByName(fieldName)
 	if valueType == reflect.String {
 		val := fieldValue.(string)
@@ -359,27 +359,27 @@ func (i *Iteration) TestSpecFieldChangedForPipeline(
 
 	ctx, cancel := utils.DefaultContext()
 	defer cancel()
-	err := test.Client.Update(ctx, pipeline)
+	err := test.Client.Update(ctx, synchronizer)
 	if err != nil {
 		return err
 	}
-	pipeline, err = i.ExpectInitSyncUnknownReconcile()
+	synchronizer, err = i.ExpectInitSyncUnknownReconcile()
 	if err != nil {
 		return err
 	}
-	if pipeline.Status.ActiveIndexName != activeIndex {
-		return errors.New("pipeline.Status.ActiveIndexName != activeIndex")
+	if synchronizer.Status.ActiveIndexName != activeIndex {
+		return errors.New("synchronizer.Status.ActiveIndexName != activeIndex")
 	}
 
 	return nil
 }
 
 func (i *Iteration) TestSpecFieldChanged(fieldName string, fieldValue interface{}, valueType reflect.Kind) error {
-	pipeline, err := i.CreateValidPipeline()
+	synchronizer, err := i.CreateValidSynchronizer()
 	if err != nil {
 		return err
 	}
-	return i.TestSpecFieldChangedForPipeline(pipeline, fieldName, fieldValue, valueType)
+	return i.TestSpecFieldChangedForSynchronizer(synchronizer, fieldName, fieldValue, valueType)
 }
 
 func (i *Iteration) CopySecret(existingSecretName string, newSecretName string, existingNamespace string, newNamespace string) error {
@@ -409,7 +409,7 @@ func (i *Iteration) DeleteAllHosts() error {
 	return rows.Close()
 }
 
-func (i *Iteration) SyncHosts(pipelineVersion string, numHosts int) ([]string, error) {
+func (i *Iteration) SyncHosts(synchronizerVersion string, numHosts int) ([]string, error) {
 	var ids []string
 
 	for j := 0; j < numHosts; j++ {
@@ -417,7 +417,7 @@ func (i *Iteration) SyncHosts(pipelineVersion string, numHosts int) ([]string, e
 		if err != nil {
 			return nil, err
 		}
-		err = i.IndexSimpleDocument(pipelineVersion, id)
+		err = i.IndexSimpleDocument(synchronizerVersion, id)
 		if err != nil {
 			return nil, err
 		}
@@ -427,15 +427,15 @@ func (i *Iteration) SyncHosts(pipelineVersion string, numHosts int) ([]string, e
 	return ids, nil
 }
 
-func (i *Iteration) IndexSimpleDocument(pipelineVersion string, id string) error {
-	return i.IndexDocument(pipelineVersion, id, "simple", i.Now)
+func (i *Iteration) IndexSimpleDocument(synchronizerVersion string, id string) error {
+	return i.IndexDocument(synchronizerVersion, id, "simple", i.Now)
 }
 
-func (i *Iteration) IndexDocumentNow(pipelineVersion string, id string, filename string) error {
-	return i.IndexDocument(pipelineVersion, id, filename, i.Now)
+func (i *Iteration) IndexDocumentNow(synchronizerVersion string, id string, filename string) error {
+	return i.IndexDocument(synchronizerVersion, id, filename, i.Now)
 }
 
-func (i *Iteration) IndexDocument(pipelineVersion string, id string, filename string, modifiedOn time.Time) error {
+func (i *Iteration) IndexDocument(synchronizerVersion string, id string, filename string, modifiedOn time.Time) error {
 	esDocumentFile, err := ioutil.ReadFile(test.GetRootDir() + "/test/hosts/es/" + filename + ".json")
 	if err != nil {
 		return err
@@ -459,7 +459,7 @@ func (i *Iteration) IndexDocument(pipelineVersion string, id string, filename st
 
 	// Set up the request object.
 	req := esapi.IndexRequest{
-		Index:      i.EsClient.ESIndexName(pipelineVersion),
+		Index:      i.EsClient.ESIndexName(synchronizerVersion),
 		DocumentID: id,
 		Body:       strings.NewReader(strings.ReplaceAll(templateParsed, "\n", "")),
 		Refresh:    "true",
@@ -585,13 +585,13 @@ func (i *Iteration) CreateDbSecret(name string) error {
 	return test.Client.Create(ctx, secret)
 }
 
-func (i *Iteration) ExpectPipelineVersionToBeRemoved(pipelineVersion string) error {
-	exists, err := i.EsClient.IndexExists(i.EsClient.ESIndexName(pipelineVersion))
+func (i *Iteration) ExpectSynchronizerVersionToBeRemoved(synchronizerVersion string) error {
+	exists, err := i.EsClient.IndexExists(i.EsClient.ESIndexName(synchronizerVersion))
 	if err != nil {
 		return err
 	}
 	if exists != false {
-		return errors.New(fmt.Sprintf("expected index %s to not exist", i.EsClient.ESIndexName(pipelineVersion)))
+		return errors.New(fmt.Sprintf("expected index %s to not exist", i.EsClient.ESIndexName(synchronizerVersion)))
 	}
 
 	slots, err := i.DbClient.ListReplicationSlots(ResourceNamePrefix)
@@ -602,157 +602,157 @@ func (i *Iteration) ExpectPipelineVersionToBeRemoved(pipelineVersion string) err
 		return errors.New("expected all replication slots to be removed for prefix: " + ResourceNamePrefix)
 	}
 
-	versions, err := i.KafkaTopics.ListTopicNamesForPipelineVersion(pipelineVersion)
+	versions, err := i.KafkaTopics.ListTopicNamesForSynchronizerVersion(synchronizerVersion)
 	if err != nil {
 		return err
 	}
 	if len(versions) != 0 {
-		return errors.New("expected no topic names to exist for version: " + pipelineVersion)
+		return errors.New("expected no topic names to exist for version: " + synchronizerVersion)
 	}
 
-	connectors, err := i.KafkaConnectors.ListConnectorNamesForPipelineVersion(pipelineVersion)
+	connectors, err := i.KafkaConnectors.ListConnectorNamesForSynchronizerVersion(synchronizerVersion)
 	if err != nil {
 		return err
 	}
 	if len(connectors) != 0 {
-		return errors.New("expected no connectors for version: " + pipelineVersion)
+		return errors.New("expected no connectors for version: " + synchronizerVersion)
 	}
 
-	esPipelines, err := i.EsClient.ListESPipelines(pipelineVersion)
+	esSynchronizers, err := i.EsClient.ListESSynchronizers(synchronizerVersion)
 	if err != nil {
 		return err
 	}
-	if len(esPipelines) != 0 {
-		return errors.New("expected no pipelines to exist for version: " + pipelineVersion)
+	if len(esSynchronizers) != 0 {
+		return errors.New("expected no synchronizers to exist for version: " + synchronizerVersion)
 	}
 
 	return nil
 }
 
-func (i *Iteration) ExpectValidReconcile() (*xjoin.XJoinPipeline, error) {
+func (i *Iteration) ExpectValidReconcile() (*xjoin.XJoinSynchronizer, error) {
 	_, err := i.ReconcileValidation()
 	if err != nil {
 		return nil, err
 	}
-	pipeline, err := i.ReconcileXJoin()
+	synchronizer, err := i.ReconcileXJoin()
 	if err != nil {
 		return nil, err
 	}
 
-	if pipeline.GetState() != xjoin.STATE_VALID {
-		return nil, errors.New("expected pipeline state to be valid")
+	if synchronizer.GetState() != xjoin.STATE_VALID {
+		return nil, errors.New("expected synchronizer state to be valid")
 	}
 
-	if pipeline.Status.InitialSyncInProgress != false {
+	if synchronizer.Status.InitialSyncInProgress != false {
 		return nil, errors.New("expected InitialSyncInProgress to be false")
 	}
 
-	if pipeline.GetValid() != metav1.ConditionTrue {
-		return nil, errors.New("expected pipeline to be valid")
+	if synchronizer.GetValid() != metav1.ConditionTrue {
+		return nil, errors.New("expected synchronizer to be valid")
 	}
 
-	return pipeline, nil
+	return synchronizer, nil
 }
 
-func (i *Iteration) ExpectNewReconcile() (*xjoin.XJoinPipeline, error) {
+func (i *Iteration) ExpectNewReconcile() (*xjoin.XJoinSynchronizer, error) {
 	_, err := i.ReconcileValidation()
 	if err != nil {
 		return nil, err
 	}
-	pipeline, err := i.ReconcileXJoin()
+	synchronizer, err := i.ReconcileXJoin()
 	if err != nil {
 		return nil, err
 	}
 
-	if pipeline.GetState() != xjoin.STATE_NEW {
-		return nil, errors.New("expected pipeline state to be new")
+	if synchronizer.GetState() != xjoin.STATE_NEW {
+		return nil, errors.New("expected synchronizer state to be new")
 	}
 
-	if pipeline.Status.InitialSyncInProgress != false {
+	if synchronizer.Status.InitialSyncInProgress != false {
 		return nil, errors.New("expected InitialSyncInProgress to be false")
 	}
 
-	if pipeline.GetValid() != metav1.ConditionUnknown {
-		return nil, errors.New("expected pipeline condition to be unknown")
+	if synchronizer.GetValid() != metav1.ConditionUnknown {
+		return nil, errors.New("expected synchronizer condition to be unknown")
 	}
 
-	return pipeline, nil
+	return synchronizer, nil
 }
 
-func (i *Iteration) ExpectInitSyncInvalidReconcile() (*xjoin.XJoinPipeline, error) {
+func (i *Iteration) ExpectInitSyncInvalidReconcile() (*xjoin.XJoinSynchronizer, error) {
 	_, err := i.ReconcileValidation()
 	if err != nil {
 		return nil, err
 	}
-	pipeline, err := i.ReconcileXJoin()
+	synchronizer, err := i.ReconcileXJoin()
 	if err != nil {
 		return nil, err
 	}
 
-	if pipeline.GetState() != xjoin.STATE_INITIAL_SYNC {
-		return nil, errors.New("expected pipeline state to be initial_sync")
+	if synchronizer.GetState() != xjoin.STATE_INITIAL_SYNC {
+		return nil, errors.New("expected synchronizer state to be initial_sync")
 	}
 
-	if pipeline.Status.InitialSyncInProgress != true {
+	if synchronizer.Status.InitialSyncInProgress != true {
 		return nil, errors.New("expected InitialSyncInProgress to be true")
 	}
 
-	if pipeline.GetValid() != metav1.ConditionFalse {
-		return nil, errors.New("expected pipeline to not be valid")
+	if synchronizer.GetValid() != metav1.ConditionFalse {
+		return nil, errors.New("expected synchronizer to not be valid")
 	}
-	return pipeline, nil
+	return synchronizer, nil
 }
 
-func (i *Iteration) ExpectInitSyncUnknownReconcile() (*xjoin.XJoinPipeline, error) {
+func (i *Iteration) ExpectInitSyncUnknownReconcile() (*xjoin.XJoinSynchronizer, error) {
 	_, err := i.ReconcileValidation()
 	if err != nil {
 		return nil, err
 	}
-	pipeline, err := i.ReconcileXJoin()
+	synchronizer, err := i.ReconcileXJoin()
 	if err != nil {
 		return nil, err
 	}
 
-	if pipeline.GetState() != xjoin.STATE_INITIAL_SYNC {
-		return nil, errors.New("expected pipeline state to be initial_sync")
+	if synchronizer.GetState() != xjoin.STATE_INITIAL_SYNC {
+		return nil, errors.New("expected synchronizer state to be initial_sync")
 	}
 
-	if pipeline.Status.InitialSyncInProgress != true {
+	if synchronizer.Status.InitialSyncInProgress != true {
 		return nil, errors.New("expected InitialSyncInProgress to be true")
 	}
 
-	if pipeline.GetValid() != metav1.ConditionUnknown {
-		return nil, errors.New("expected pipeline condition to be unknown")
+	if synchronizer.GetValid() != metav1.ConditionUnknown {
+		return nil, errors.New("expected synchronizer condition to be unknown")
 	}
-	return pipeline, nil
+	return synchronizer, nil
 }
 
-func (i *Iteration) ExpectInvalidReconcile() (*xjoin.XJoinPipeline, error) {
+func (i *Iteration) ExpectInvalidReconcile() (*xjoin.XJoinSynchronizer, error) {
 	_, err := i.ReconcileValidation()
 	if err != nil {
 		return nil, err
 	}
-	pipeline, err := i.ReconcileXJoin()
+	synchronizer, err := i.ReconcileXJoin()
 	if err != nil {
 		return nil, err
 	}
 
-	if pipeline.GetState() != xjoin.STATE_INVALID {
-		return nil, errors.New("expected pipeline state to be invalid")
+	if synchronizer.GetState() != xjoin.STATE_INVALID {
+		return nil, errors.New("expected synchronizer state to be invalid")
 	}
 
-	if pipeline.Status.InitialSyncInProgress != false {
+	if synchronizer.Status.InitialSyncInProgress != false {
 		return nil, errors.New("expected InitialSyncInProgress to be false")
 	}
 
-	if pipeline.GetValid() != metav1.ConditionFalse {
-		return nil, errors.New("expected pipeline to be invalid")
+	if synchronizer.GetValid() != metav1.ConditionFalse {
+		return nil, errors.New("expected synchronizer to be invalid")
 	}
-	return pipeline, nil
+	return synchronizer, nil
 }
 
-func (i *Iteration) CreateValidPipeline(specs ...*xjoin.XJoinPipelineSpec) (*xjoin.XJoinPipeline, error) {
-	err := i.CreatePipeline(specs...)
+func (i *Iteration) CreateValidSynchronizer(specs ...*xjoin.XJoinSynchronizerSpec) (*xjoin.XJoinSynchronizer, error) {
+	err := i.CreateSynchronizer(specs...)
 	if err != nil {
 		return nil, err
 	}
@@ -765,43 +765,43 @@ func (i *Iteration) CreateValidPipeline(specs ...*xjoin.XJoinPipelineSpec) (*xjo
 		return nil, err
 	}
 
-	pipeline, err := i.ReconcileXJoin()
+	synchronizer, err := i.ReconcileXJoin()
 	if err != nil {
 		return nil, err
 	}
 
-	if pipeline.GetState() != xjoin.STATE_VALID {
-		return nil, errors.New("expected pipeline state to be valid")
+	if synchronizer.GetState() != xjoin.STATE_VALID {
+		return nil, errors.New("expected synchronizer state to be valid")
 	}
 
-	if pipeline.Status.InitialSyncInProgress != false {
+	if synchronizer.Status.InitialSyncInProgress != false {
 		return nil, errors.New("expected InitialSyncInProgress to be false")
 	}
 
-	if pipeline.GetValid() != metav1.ConditionTrue {
-		return nil, errors.New("expected pipeline to be invalid")
+	if synchronizer.GetValid() != metav1.ConditionTrue {
+		return nil, errors.New("expected synchronizer to be invalid")
 	}
 
-	return pipeline, nil
+	return synchronizer, nil
 }
 
-func (i *Iteration) DeletePipeline(pipeline *xjoin.XJoinPipeline) error {
+func (i *Iteration) DeleteSynchronizer(synchronizer *xjoin.XJoinSynchronizer) error {
 	ctx, cancel := utils.DefaultContext()
 	defer cancel()
-	err := test.Client.Delete(ctx, pipeline)
+	err := test.Client.Delete(ctx, synchronizer)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
-	err = i.ReconcileValidationForDeletedPipeline()
+	err = i.ReconcileValidationForDeletedSynchronizer()
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
-	err = i.ReconcileXJoinForDeletedPipeline()
+	err = i.ReconcileXJoinForDeletedSynchronizer()
 	return errors.Wrap(err, 0)
 }
 
-func (i *Iteration) CreatePipeline(specs ...*xjoin.XJoinPipelineSpec) error {
-	var spec *xjoin.XJoinPipelineSpec
+func (i *Iteration) CreateSynchronizer(specs ...*xjoin.XJoinSynchronizerSpec) error {
+	var spec *xjoin.XJoinSynchronizerSpec
 
 	if len(specs) > 1 {
 		return errors.New("only one spec is allowed")
@@ -836,7 +836,7 @@ func (i *Iteration) CreatePipeline(specs ...*xjoin.XJoinPipelineSpec) error {
 			specs[0].ElasticSearchNamespace = &namespace
 		}
 	} else {
-		spec = &xjoin.XJoinPipelineSpec{
+		spec = &xjoin.XJoinSynchronizerSpec{
 			ResourceNamePrefix:      &ResourceNamePrefix,
 			ConnectClusterNamespace: &namespace,
 			KafkaClusterNamespace:   &namespace,
@@ -846,7 +846,7 @@ func (i *Iteration) CreatePipeline(specs ...*xjoin.XJoinPipelineSpec) error {
 		}
 	}
 
-	pipeline := xjoin.XJoinPipeline{
+	synchronizer := xjoin.XJoinSynchronizer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      i.NamespacedName.Name,
 			Namespace: i.NamespacedName.Namespace,
@@ -856,21 +856,21 @@ func (i *Iteration) CreatePipeline(specs ...*xjoin.XJoinPipelineSpec) error {
 
 	ctx, cancel := utils.DefaultContext()
 	defer cancel()
-	err := test.Client.Create(ctx, &pipeline)
+	err := test.Client.Create(ctx, &synchronizer)
 	if err != nil {
 		return err
 	}
-	i.Pipelines = append(i.Pipelines, &pipeline)
+	i.Synchronizers = append(i.Synchronizers, &synchronizer)
 	return nil
 }
 
-func (i *Iteration) GetPipeline() (*xjoin.XJoinPipeline, error) {
+func (i *Iteration) GetSynchronizer() (*xjoin.XJoinSynchronizer, error) {
 	ctx, cancel := utils.DefaultContext()
 	defer cancel()
-	return k8sUtils.FetchXJoinPipeline(test.Client, i.NamespacedName, ctx)
+	return k8sUtils.FetchXJoinSynchronizer(test.Client, i.NamespacedName, ctx)
 }
 
-func (i *Iteration) ReconcileXJoinForDeletedPipeline() error {
+func (i *Iteration) ReconcileXJoinForDeletedSynchronizer() error {
 	ctx, cancel := utils.DefaultContext()
 	defer cancel()
 	result, err := i.XJoinReconciler.Reconcile(ctx, ctrl.Request{NamespacedName: i.NamespacedName})
@@ -907,7 +907,7 @@ func (i *Iteration) ReconcileXJoinNonTestWithError() error {
 	return err
 }
 
-func (i *Iteration) ReconcileXJoinNonTest() (*xjoin.XJoinPipeline, error) {
+func (i *Iteration) ReconcileXJoinNonTest() (*xjoin.XJoinSynchronizer, error) {
 	ctx, cancel := utils.DefaultContext()
 	defer cancel()
 	xJoinReconciler := newXJoinReconciler(i.NamespacedName.Namespace, false)
@@ -919,7 +919,7 @@ func (i *Iteration) ReconcileXJoinNonTest() (*xjoin.XJoinPipeline, error) {
 	if result.Requeue != false {
 		return nil, errors.New("expected result.requeue to be false")
 	}
-	return i.GetPipeline()
+	return i.GetSynchronizer()
 }
 
 func (i *Iteration) ReconcileKafkaConnect() (bool, error) {
@@ -932,7 +932,7 @@ func (i *Iteration) ReconcileKafkaConnect() (bool, error) {
 	return result.Requeue, err
 }
 
-func (i *Iteration) ReconcileXJoin() (*xjoin.XJoinPipeline, error) {
+func (i *Iteration) ReconcileXJoin() (*xjoin.XJoinSynchronizer, error) {
 	ctx, cancel := utils.DefaultContext()
 	defer cancel()
 	result, err := i.XJoinReconciler.Reconcile(ctx, ctrl.Request{NamespacedName: i.NamespacedName})
@@ -942,10 +942,10 @@ func (i *Iteration) ReconcileXJoin() (*xjoin.XJoinPipeline, error) {
 	if result.Requeue != false {
 		return nil, errors.New("expected result.Requeue to be false")
 	}
-	return i.GetPipeline()
+	return i.GetSynchronizer()
 }
 
-func (i *Iteration) ReconcileValidationForDeletedPipeline() error {
+func (i *Iteration) ReconcileValidationForDeletedSynchronizer() error {
 	ctx, cancel := utils.DefaultContext()
 	defer cancel()
 	result, err := i.ValidationReconciler.Reconcile(ctx, ctrl.Request{NamespacedName: i.NamespacedName})
@@ -959,7 +959,7 @@ func (i *Iteration) ReconcileValidationForDeletedPipeline() error {
 	return nil
 }
 
-func (i *Iteration) ReconcileValidation() (*xjoin.XJoinPipeline, error) {
+func (i *Iteration) ReconcileValidation() (*xjoin.XJoinSynchronizer, error) {
 	ctx, cancel := utils.DefaultContext()
 	defer cancel()
 	result, err := i.ValidationReconciler.Reconcile(ctx, ctrl.Request{NamespacedName: i.NamespacedName})
@@ -970,7 +970,7 @@ func (i *Iteration) ReconcileValidation() (*xjoin.XJoinPipeline, error) {
 	if result.Requeue != false {
 		return nil, errors.New("expected result.requeue to be false")
 	}
-	return i.GetPipeline()
+	return i.GetSynchronizer()
 }
 
 func (i *Iteration) AssertValidationEvents(numHosts int) error {
@@ -998,27 +998,27 @@ func (i *Iteration) AssertValidationEvents(numHosts int) error {
 	return nil
 }
 
-func (i *Iteration) WaitForPipelineToBeValid() (*xjoin.XJoinPipeline, error) {
-	var pipeline *xjoin.XJoinPipeline
+func (i *Iteration) WaitForSynchronizerToBeValid() (*xjoin.XJoinSynchronizer, error) {
+	var synchronizer *xjoin.XJoinSynchronizer
 
 	for j := 0; j < 10; j++ {
 		_, err := i.ReconcileValidation()
 		if err != nil {
 			return nil, err
 		}
-		pipeline, err = i.GetPipeline()
+		synchronizer, err = i.GetSynchronizer()
 		if err != nil {
 			return nil, err
 		}
 
-		if pipeline.GetState() == xjoin.STATE_VALID {
+		if synchronizer.GetState() == xjoin.STATE_VALID {
 			break
 		}
 
 		time.Sleep(1 * time.Second)
 	}
 
-	return pipeline, nil
+	return synchronizer, nil
 }
 
 func (i *Iteration) setPrefix(prefix string) error {
@@ -1031,7 +1031,7 @@ func (i *Iteration) setPrefix(prefix string) error {
 }
 
 func (i *Iteration) fullValidationFailureTest(hbiFileName string, esFileName string) error {
-	pipeline, err := i.CreateValidPipeline()
+	synchronizer, err := i.CreateValidSynchronizer()
 	if err != nil {
 		return err
 	}
@@ -1040,7 +1040,7 @@ func (i *Iteration) fullValidationFailureTest(hbiFileName string, esFileName str
 		return err
 	}
 
-	_, err = i.SyncHosts(pipeline.Status.PipelineVersion, 3)
+	_, err = i.SyncHosts(synchronizer.Status.SynchronizerVersion, 3)
 	if err != nil {
 		return err
 	}
@@ -1049,20 +1049,20 @@ func (i *Iteration) fullValidationFailureTest(hbiFileName string, esFileName str
 	if err != nil {
 		return err
 	}
-	err = i.IndexDocumentNow(pipeline.Status.PipelineVersion, hostId, esFileName)
+	err = i.IndexDocumentNow(synchronizer.Status.SynchronizerVersion, hostId, esFileName)
 	if err != nil {
 		return err
 	}
 
-	pipeline, err = i.ReconcileValidation()
+	synchronizer, err = i.ReconcileValidation()
 	if err != nil {
 		return err
 	}
-	if pipeline.GetState() != xjoin.STATE_INVALID {
-		return errors.New("expected pipeline state to be invalid")
+	if synchronizer.GetState() != xjoin.STATE_INVALID {
+		return errors.New("expected synchronizer state to be invalid")
 	}
-	if pipeline.GetValid() != metav1.ConditionFalse {
-		return errors.New("expected pipeline to be invalid")
+	if synchronizer.GetValid() != metav1.ConditionFalse {
+		return errors.New("expected synchronizer to be invalid")
 	}
 
 	recorder, _ := i.ValidationReconciler.Recorder.(*record.FakeRecorder)

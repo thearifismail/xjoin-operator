@@ -1,1 +1,1 @@
-This package contains code related to the XJoinIndex and XJoinIndexPipeline CRDs.
+This package contains code related to the XJoinIndex and XJoinIndexSynchronizer CRDs.

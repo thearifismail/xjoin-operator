@@ -43,25 +43,25 @@ var connectorsGVK = schema.GroupVersionKind{
 	Version: "v1beta2",
 }
 
-func (c *StrimziConnectors) newESConnectorResource(pipelineVersion string) (*unstructured.Unstructured, error) {
+func (c *StrimziConnectors) newESConnectorResource(synchronizerVersion string) (*unstructured.Unstructured, error) {
 	m := c.Kafka.ParametersMap
-	m["Topic"] = c.Topics.TopicName(pipelineVersion)
-	m["RenameTopicReplacement"] = fmt.Sprintf("%s.%s", c.Kafka.Parameters.ResourceNamePrefix.String(), pipelineVersion)
+	m["Topic"] = c.Topics.TopicName(synchronizerVersion)
+	m["RenameTopicReplacement"] = fmt.Sprintf("%s.%s", c.Kafka.Parameters.ResourceNamePrefix.String(), synchronizerVersion)
 
 	return c.newConnectorResource(
-		c.ESConnectorName(pipelineVersion),
+		c.ESConnectorName(synchronizerVersion),
 		"io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
 		m,
 		c.Kafka.Parameters.ElasticSearchConnectorTemplate.String())
 }
 
-func (c *StrimziConnectors) newDebeziumConnectorResource(pipelineVersion string) (*unstructured.Unstructured, error) {
+func (c *StrimziConnectors) newDebeziumConnectorResource(synchronizerVersion string) (*unstructured.Unstructured, error) {
 	m := c.Kafka.ParametersMap
-	m["Version"] = pipelineVersion
-	m["ReplicationSlotName"] = database.ReplicationSlotName(c.Kafka.Parameters.ResourceNamePrefix.String(), pipelineVersion)
+	m["Version"] = synchronizerVersion
+	m["ReplicationSlotName"] = database.ReplicationSlotName(c.Kafka.Parameters.ResourceNamePrefix.String(), synchronizerVersion)
 
 	return c.newConnectorResource(
-		c.DebeziumConnectorName(pipelineVersion),
+		c.DebeziumConnectorName(synchronizerVersion),
 		"io.debezium.connector.postgresql.PostgresConnector",
 		m,
 		c.Kafka.Parameters.DebeziumTemplate.String())
@@ -310,8 +310,8 @@ func (c *StrimziConnectors) ListConnectorsREST(prefix string) ([]string, error) 
 	return connectorsFiltered, nil
 }
 
-func (c *StrimziConnectors) DeleteConnectorsForPipelineVersion(pipelineVersion string) error {
-	connectorsToDelete, err := c.ListConnectorNamesForPipelineVersion(pipelineVersion)
+func (c *StrimziConnectors) DeleteConnectorsForSynchronizerVersion(synchronizerVersion string) error {
+	connectorsToDelete, err := c.ListConnectorNamesForSynchronizerVersion(synchronizerVersion)
 	if err != nil {
 		return err
 	}
@@ -326,7 +326,7 @@ func (c *StrimziConnectors) DeleteConnectorsForPipelineVersion(pipelineVersion s
 	return nil
 }
 
-func (c *StrimziConnectors) ListConnectorNamesForPipelineVersion(pipelineVersion string) ([]string, error) {
+func (c *StrimziConnectors) ListConnectorNamesForSynchronizerVersion(synchronizerVersion string) ([]string, error) {
 	connectors, err := c.Kafka.ListConnectors()
 	if err != nil {
 		return nil, err
@@ -334,7 +334,7 @@ func (c *StrimziConnectors) ListConnectorNamesForPipelineVersion(pipelineVersion
 
 	var names []string
 	for _, connector := range connectors.Items {
-		if strings.Index(connector.GetName(), pipelineVersion) != -1 {
+		if strings.Index(connector.GetName(), synchronizerVersion) != -1 {
 			names = append(names, connector.GetName())
 		}
 	}
@@ -460,10 +460,10 @@ func (c *StrimziConnectors) IsFailed(connectorName string) (bool, error) {
 }
 
 func (c *StrimziConnectors) CreateESConnector(
-	pipelineVersion string,
+	synchronizerVersion string,
 	dryRun bool) (*unstructured.Unstructured, error) {
 
-	connector, err := c.newESConnectorResource(pipelineVersion)
+	connector, err := c.newESConnectorResource(synchronizerVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -478,10 +478,10 @@ func (c *StrimziConnectors) CreateESConnector(
 }
 
 func (c *StrimziConnectors) CreateDebeziumConnector(
-	pipelineVersion string,
+	synchronizerVersion string,
 	dryRun bool) (*unstructured.Unstructured, error) {
 
-	connector, err := c.newDebeziumConnectorResource(pipelineVersion)
+	connector, err := c.newDebeziumConnectorResource(synchronizerVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -494,24 +494,24 @@ func (c *StrimziConnectors) CreateDebeziumConnector(
 	return connector, c.Kafka.Client.Create(ctx, connector)
 }
 
-func (c *StrimziConnectors) DebeziumConnectorName(pipelineVersion string) string {
-	return fmt.Sprintf("%s.db.%s", c.Kafka.Parameters.ResourceNamePrefix.String(), pipelineVersion)
+func (c *StrimziConnectors) DebeziumConnectorName(synchronizerVersion string) string {
+	return fmt.Sprintf("%s.db.%s", c.Kafka.Parameters.ResourceNamePrefix.String(), synchronizerVersion)
 }
 
-func (c *StrimziConnectors) ESConnectorName(pipelineVersion string) string {
-	return fmt.Sprintf("%s.es.%s", c.Kafka.Parameters.ResourceNamePrefix.String(), pipelineVersion)
+func (c *StrimziConnectors) ESConnectorName(synchronizerVersion string) string {
+	return fmt.Sprintf("%s.es.%s", c.Kafka.Parameters.ResourceNamePrefix.String(), synchronizerVersion)
 }
 
-func (c *StrimziConnectors) PauseElasticSearchConnector(pipelineVersion string) error {
-	return c.setElasticSearchConnectorPause(pipelineVersion, true)
+func (c *StrimziConnectors) PauseElasticSearchConnector(synchronizerVersion string) error {
+	return c.setElasticSearchConnectorPause(synchronizerVersion, true)
 }
 
-func (c *StrimziConnectors) ResumeElasticSearchConnector(pipelineVersion string) error {
-	return c.setElasticSearchConnectorPause(pipelineVersion, false)
+func (c *StrimziConnectors) ResumeElasticSearchConnector(synchronizerVersion string) error {
+	return c.setElasticSearchConnectorPause(synchronizerVersion, false)
 }
 
-func (c *StrimziConnectors) setElasticSearchConnectorPause(pipelineVersion string, pause bool) error {
-	connector, err := c.Kafka.GetConnector(c.ESConnectorName(pipelineVersion))
+func (c *StrimziConnectors) setElasticSearchConnectorPause(synchronizerVersion string, pause bool) error {
+	connector, err := c.Kafka.GetConnector(c.ESConnectorName(synchronizerVersion))
 	if err != nil {
 		return err
 	}

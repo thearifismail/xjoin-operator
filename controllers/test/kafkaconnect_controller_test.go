@@ -1,14 +1,15 @@
 package test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/xjoin-operator/test"
 	"gopkg.in/h2non/gock.v1"
-	"time"
 )
 
-var _ = Describe("Pipeline operations", func() {
+var _ = Describe("Synchronizer operations", func() {
 	var i *Iteration
 
 	BeforeEach(func() {
@@ -35,7 +36,7 @@ var _ = Describe("Pipeline operations", func() {
 			originalPodName, err := i.getConnectPodName()
 			Expect(err).ToNot(HaveOccurred())
 
-			err = i.CreatePipeline()
+			err = i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			requeue, err := i.ReconcileKafkaConnect()
 			Expect(requeue).To(BeFalse())
@@ -57,7 +58,7 @@ var _ = Describe("Pipeline operations", func() {
 			originalPodName, err := i.getConnectPodName()
 			Expect(err).ToNot(HaveOccurred())
 
-			pipeline, err := i.CreateValidPipeline()
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 
 			gock.New("http://connect-connect-api.test.svc:8083").
@@ -65,11 +66,11 @@ var _ = Describe("Pipeline operations", func() {
 				Reply(200)
 
 			gock.New("http://connect-connect-api.test.svc:8083").
-				Get("/connectors/" + pipeline.Status.ActiveDebeziumConnectorName).
+				Get("/connectors/" + synchronizer.Status.ActiveDebeziumConnectorName).
 				Reply(500)
 
 			gock.New("http://connect-connect-api.test.svc:8083").
-				Get("/connectors/" + pipeline.Status.ActiveESConnectorName).
+				Get("/connectors/" + synchronizer.Status.ActiveESConnectorName).
 				Reply(500)
 
 			requeue, err := i.ReconcileKafkaConnect()
@@ -86,7 +87,7 @@ var _ = Describe("Pipeline operations", func() {
 			Skip("unreliable")
 			originalPodName, err := i.getConnectPodName()
 			Expect(err).ToNot(HaveOccurred())
-			err = i.CreatePipeline()
+			err = i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			requeue, err := i.ReconcileKafkaConnect()
 			Expect(requeue).To(BeFalse())

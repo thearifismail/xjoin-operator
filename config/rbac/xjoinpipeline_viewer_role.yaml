@@ -1,13 +1,13 @@
-# permissions for end users to view xjoinpipelines.
+# permissions for end users to view xjoinsynchronizers.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: xjoinpipeline-viewer-role
+  name: xjoinsynchronizer-viewer-role
 rules:
 - apiGroups:
   - xjoin.cloud.redhat.com
   resources:
-  - xjoinpipelines
+  - xjoinsynchronizers
   verbs:
   - get
   - list
@@ -15,6 +15,6 @@ rules:
 - apiGroups:
   - xjoin.cloud.redhat.com
   resources:
-  - xjoinpipelines/status
+  - xjoinsynchronizers/status
   verbs:
   - get

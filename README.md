@@ -1,24 +1,24 @@
 XJoin (Cross Join) Operator
 ==============
 
-Openshift operator that manages the [XJoin pipeline](https://clouddot.pages.redhat.com/docs/dev/services/xjoin.html).
+Openshift operator that manages the [XJoin synchronizer](https://clouddot.pages.redhat.com/docs/dev/services/xjoin.html).
 It currently manages version 1 of XJoin,
-i.e. it maintains the replication pipeline between HBI and ElasticSearch.
+i.e. it maintains the replication synchronizer between HBI and ElasticSearch.
 Modifications will be necessary to support [version 2](#version-2) (joining data between applications).
 
-A XJoin pipeline is defined by the
-[XJoinPipeline custom resource](./config/crd/bases/xjoin.cloud.redhat.com_xjoinpipelines.yaml).
+A XJoin synchronizer is defined by the
+[XJoinSynchronizer custom resource](./config/crd/bases/xjoin.cloud.redhat.com_xjoinsynchronizers.yaml).
 It indexes the hosts table of the HBI database into an ElasticSearch index.
 A Debezium Kafka Connector is used to read from the HBI database's replication slot.
 An ElasticSearch connector is used to index the hosts.
 Kafka Connect transformations are performed on the ElasticSearch connector to prepare the host records to be indexed.
-An ElasticSearch pipeline is used to transform the JSON fields on a host prior to being indexed.
+An ElasticSearch synchronizer is used to transform the JSON fields on a host prior to being indexed.
 
 ![Architecture](./docs/architecture.png "XJoin Operator Architecture")
 
 The operator is responsible for:
 
-- management of an ElasticSearch index, alias, and pipeline
+- management of an ElasticSearch index, alias, and synchronizer
 - management of Debezium (source) and ElasticSearch (sink) connectors in a Kafka Connect cluster (using Strimzi)
 - management of a Kafka Topic in a Kafka cluster (using Strimzi)
 - management of the HBI replication slot. The Debezium connector should manage this. The operator ensures there are no
@@ -28,11 +28,11 @@ The operator is responsible for:
 
 ## Implementation
 
-The operator defines two controllers that reconcile a XJoinPipeline
-* [PipelineController](./controllers/xjoinpipeline_controller.go) which manages all the resources
+The operator defines two controllers that reconcile a XJoinSynchronizer
+* [SynchronizerController](./controllers/xjoinsynchronizer_controller.go) which manages all the resources
   (connectors, elasticsearch resources, topic, replication slots) and handles recovery
 * [ValidationController](./controllers/validation_controller.go) which periodically compares the data in the
-  ElasticSearch index with what is stored in HBI to determine whether the pipeline is valid
+  ElasticSearch index with what is stored in HBI to determine whether the synchronizer is valid
 
 ## Development
 ### Setting up the development environment using Clowder
@@ -120,9 +120,9 @@ With the cluster set up it is now possible to install manifests and run the oper
     make run ENABLE_WEBHOOKS=false
     ```
 
-1. Finally, create a new pipeline
+1. Finally, create a new synchronizer
     ```
-    kubectl apply -f ../config/samples/xjoin_v1alpha1_xjoinpipeline.yaml -n test
+    kubectl apply -f ../config/samples/xjoin_v1alpha1_xjoinsynchronizer.yaml -n test
     ```
 
 There is also `make delve` to debug the operator. After starting the Delve server process, connect to it with a Delve debugger.
@@ -219,7 +219,7 @@ the Elasticsearch index directly instead of querying the GraphQL API.
 1. Verify the Kafka and Kafka Connect pods are running
 2. Check the logs of the xjoin-operator
 3. Look at the status of each of the following resources via `kubectl get -o yaml <resource name>`:
-   `XJoinIndex`, `XJoinIndexPipeline`, `XJoinDataSource`, `XJoinDataSourcePipeline`, `KafkaConnector`
+   `XJoinIndex`, `XJoinIndexSynchronizer`, `XJoinDataSource`, `XJoinDataSourceSynchronizer`, `KafkaConnector`
 4. Check the logs of Kafka Connect via 
     ```
     kubectl logs -f -l app.kubernetes.io/instance=connect --all-containers=true`
@@ -230,7 +230,7 @@ the Elasticsearch index directly instead of querying the GraphQL API.
    ```
 6. Check the logs of xjoin-core via
     ```
-    kubectl logs -f -l xjoin.index=xjoin-core-xjoinindexpipeline-hosts --all-containers=true
+    kubectl logs -f -l xjoin.index=xjoin-core-xjoinindexsynchronizer-hosts --all-containers=true
     ```
 7. Check if messages are on the datasource and index topics by using kcat to consume each topic from the beginning
    ```

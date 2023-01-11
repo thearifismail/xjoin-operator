@@ -78,56 +78,56 @@ func (i *XJoinIndexValidatorIteration) ReconcileValidationPod() (phase string, e
 		}
 		schemas[ref.Name] = refSchema
 
-		//Get datasourcepipeline k8s object to get db connection info
-		dataSourcePipeline := &v1alpha1.XJoinDataSourcePipeline{}
-		dataSourcePipelineName := strings.Split(ref.Subject, "xjoindatasourcepipeline.")[1]
-		dataSourcePipelineName = strings.Split(dataSourcePipelineName, "-value")[0]
+		//Get datasourcesynchronizer k8s object to get db connection info
+		dataSourceSynchronizer := &v1alpha1.XJoinDataSourceSynchronizer{}
+		dataSourceSynchronizerName := strings.Split(ref.Subject, "xjoindatasourcesynchronizer.")[1]
+		dataSourceSynchronizerName = strings.Split(dataSourceSynchronizerName, "-value")[0]
 		err = i.Client.Get(
 			i.Context,
-			client.ObjectKey{Name: dataSourcePipelineName, Namespace: i.GetInstance().Namespace},
-			dataSourcePipeline)
+			client.ObjectKey{Name: dataSourceSynchronizerName, Namespace: i.GetInstance().Namespace},
+			dataSourceSynchronizer)
 		if err != nil {
 			return "", errors.Wrap(err, 0)
 		}
 
 		envVars = append(envVars, v1.EnvVar{
-			Name: strings.Split(dataSourcePipelineName, ".")[0] + "_DB_HOSTNAME",
+			Name: strings.Split(dataSourceSynchronizerName, ".")[0] + "_DB_HOSTNAME",
 			ValueFrom: &v1.EnvVarSource{
-				SecretKeyRef: dataSourcePipeline.Spec.DatabaseHostname.ValueFrom.SecretKeyRef,
+				SecretKeyRef: dataSourceSynchronizer.Spec.DatabaseHostname.ValueFrom.SecretKeyRef,
 			},
 		})
 
 		envVars = append(envVars, v1.EnvVar{
-			Name: strings.Split(dataSourcePipelineName, ".")[0] + "_DB_USERNAME",
+			Name: strings.Split(dataSourceSynchronizerName, ".")[0] + "_DB_USERNAME",
 			ValueFrom: &v1.EnvVarSource{
-				SecretKeyRef: dataSourcePipeline.Spec.DatabaseUsername.ValueFrom.SecretKeyRef,
+				SecretKeyRef: dataSourceSynchronizer.Spec.DatabaseUsername.ValueFrom.SecretKeyRef,
 			},
 		})
 
 		envVars = append(envVars, v1.EnvVar{
-			Name: strings.Split(dataSourcePipelineName, ".")[0] + "_DB_PASSWORD",
+			Name: strings.Split(dataSourceSynchronizerName, ".")[0] + "_DB_PASSWORD",
 			ValueFrom: &v1.EnvVarSource{
-				SecretKeyRef: dataSourcePipeline.Spec.DatabasePassword.ValueFrom.SecretKeyRef,
+				SecretKeyRef: dataSourceSynchronizer.Spec.DatabasePassword.ValueFrom.SecretKeyRef,
 			},
 		})
 
 		envVars = append(envVars, v1.EnvVar{
-			Name: strings.Split(dataSourcePipelineName, ".")[0] + "_DB_NAME",
+			Name: strings.Split(dataSourceSynchronizerName, ".")[0] + "_DB_NAME",
 			ValueFrom: &v1.EnvVarSource{
-				SecretKeyRef: dataSourcePipeline.Spec.DatabaseName.ValueFrom.SecretKeyRef,
+				SecretKeyRef: dataSourceSynchronizer.Spec.DatabaseName.ValueFrom.SecretKeyRef,
 			},
 		})
 
 		envVars = append(envVars, v1.EnvVar{
-			Name: strings.Split(dataSourcePipelineName, ".")[0] + "_DB_PORT",
+			Name: strings.Split(dataSourceSynchronizerName, ".")[0] + "_DB_PORT",
 			ValueFrom: &v1.EnvVarSource{
-				SecretKeyRef: dataSourcePipeline.Spec.DatabasePort.ValueFrom.SecretKeyRef,
+				SecretKeyRef: dataSourceSynchronizer.Spec.DatabasePort.ValueFrom.SecretKeyRef,
 			},
 		})
 
 		envVars = append(envVars, v1.EnvVar{
-			Name:  strings.Split(dataSourcePipelineName, ".")[0] + "_DB_TABLE",
-			Value: dataSourcePipeline.Spec.DatabaseTable.Value,
+			Name:  strings.Split(dataSourceSynchronizerName, ".")[0] + "_DB_TABLE",
+			Value: dataSourceSynchronizer.Spec.DatabaseTable.Value,
 		})
 	}
 
@@ -230,20 +230,20 @@ func (i *XJoinIndexValidatorIteration) ReconcileValidationPod() (phase string, e
 			return "", errors.Wrap(err, 0)
 		}
 
-		//update xjoinindexpipeline resource based on xjoin-validation pod's output
+		//update xjoinindexsynchronizer resource based on xjoin-validation pod's output
 		i.Log.Info(response.Message)
 
 		indexNamespacedName := types.NamespacedName{
 			Name:      i.Instance.GetName(),
 			Namespace: i.Instance.GetNamespace(),
 		}
-		xjoinIndexPipeline, err := k8sUtils.FetchXJoinIndexPipeline(i.Client, indexNamespacedName, i.Context)
+		xjoinIndexSynchronizer, err := k8sUtils.FetchXJoinIndexSynchronizer(i.Client, indexNamespacedName, i.Context)
 		if err != nil {
 			return "", errors.Wrap(err, 0)
 		}
-		xjoinIndexPipeline.Status.ValidationResponse = response
+		xjoinIndexSynchronizer.Status.ValidationResponse = response
 
-		if err := i.Client.Status().Update(i.Context, xjoinIndexPipeline); err != nil {
+		if err := i.Client.Status().Update(i.Context, xjoinIndexSynchronizer); err != nil {
 			if k8errors.IsConflict(err) {
 				i.Log.Error(err, "Status conflict")
 				return "", errors.Wrap(err, 0)

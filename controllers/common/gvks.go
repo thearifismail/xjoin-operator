@@ -8,9 +8,9 @@ var IndexGVK = schema.GroupVersionKind{
 	Version: "v1alpha1",
 }
 
-var IndexPipelineGVK = schema.GroupVersionKind{
+var IndexSynchronizerGVK = schema.GroupVersionKind{
 	Group:   "xjoin.cloud.redhat.com",
-	Kind:    "XJoinIndexPipeline",
+	Kind:    "XJoinIndexSynchronizer",
 	Version: "v1alpha1",
 }
 
@@ -26,9 +26,9 @@ var DataSourceGVK = schema.GroupVersionKind{
 	Version: "v1alpha1",
 }
 
-var DataSourcePipelineGVK = schema.GroupVersionKind{
+var DataSourceSynchronizerGVK = schema.GroupVersionKind{
 	Group:   "xjoin.cloud.redhat.com",
-	Kind:    "XJoinDataSourcePipeline",
+	Kind:    "XJoinDataSourceSynchronizer",
 	Version: "v1alpha1",
 }
 

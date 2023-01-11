@@ -2,6 +2,11 @@ package test
 
 import (
 	"fmt"
+	"reflect"
+	"strconv"
+	"testing"
+	"time"
+
 	"github.com/redhatinsights/xjoin-go-lib/pkg/utils"
 	xjoin "github.com/redhatinsights/xjoin-operator/api/v1alpha1"
 	"github.com/redhatinsights/xjoin-operator/controllers/database"
@@ -11,10 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/record"
-	"reflect"
-	"strconv"
-	"testing"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -24,7 +25,7 @@ func TestControllers(t *testing.T) {
 	test.Setup(t, "Controllers")
 }
 
-var _ = Describe("Pipeline operations", func() {
+var _ = Describe("Synchronizer operations", func() {
 	var i *Iteration
 
 	BeforeEach(func() {
@@ -39,22 +40,22 @@ var _ = Describe("Pipeline operations", func() {
 	})
 
 	Describe("New -> InitialSync", func() {
-		It("Creates a connector, ES Index, and topic for a new pipeline", func() {
-			err := i.CreatePipeline()
+		It("Creates a connector, ES Index, and topic for a new synchronizer", func() {
+			err := i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			_, err = i.ReconcileXJoin()
 			Expect(err).ToNot(HaveOccurred())
 
-			pipeline, err := i.GetPipeline()
+			synchronizer, err := i.GetSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.GetState()).To(Equal(xjoin.STATE_INITIAL_SYNC))
-			Expect(pipeline.Status.InitialSyncInProgress).To(BeTrue())
-			Expect(pipeline.GetValid()).To(Equal(metav1.ConditionUnknown))
+			Expect(synchronizer.GetState()).To(Equal(xjoin.STATE_INITIAL_SYNC))
+			Expect(synchronizer.Status.InitialSyncInProgress).To(BeTrue())
+			Expect(synchronizer.GetValid()).To(Equal(metav1.ConditionUnknown))
 
 			dbConnector, err := i.KafkaClient.GetConnector(
-				i.KafkaConnectors.DebeziumConnectorName(pipeline.Status.PipelineVersion))
+				i.KafkaConnectors.DebeziumConnectorName(synchronizer.Status.SynchronizerVersion))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(dbConnector.GetName()).To(Equal(ResourceNamePrefix + ".db." + pipeline.Status.PipelineVersion))
+			Expect(dbConnector.GetName()).To(Equal(ResourceNamePrefix + ".db." + synchronizer.Status.SynchronizerVersion))
 			dbConnectorSpec := dbConnector.Object["spec"].(map[string]interface{})
 			Expect(dbConnectorSpec["class"]).To(Equal("io.debezium.connector.postgresql.PostgresConnector"))
 			Expect(dbConnectorSpec["pause"]).To(Equal(false))
@@ -72,16 +73,16 @@ var _ = Describe("Pipeline operations", func() {
 			Expect(dbConnectorConfig["errors.log.include.messages"]).To(Equal(true))
 			Expect(dbConnectorConfig["max.queue.size"]).To(Equal(int64(1000)))
 			Expect(dbConnectorConfig["poll.interval.ms"]).To(Equal(int64(100)))
-			Expect(dbConnectorConfig["slot.name"]).To(Equal(ResourceNamePrefix + "_" + pipeline.Status.PipelineVersion))
+			Expect(dbConnectorConfig["slot.name"]).To(Equal(ResourceNamePrefix + "_" + synchronizer.Status.SynchronizerVersion))
 			Expect(dbConnectorConfig["table.whitelist"]).To(Equal("public.hosts"))
-			Expect(dbConnectorConfig["database.server.name"]).To(Equal(ResourceNamePrefix + "." + pipeline.Status.PipelineVersion))
+			Expect(dbConnectorConfig["database.server.name"]).To(Equal(ResourceNamePrefix + "." + synchronizer.Status.SynchronizerVersion))
 			Expect(dbConnectorConfig["errors.log.enable"]).To(Equal(true))
 			Expect(dbConnectorConfig["transforms.unwrap.type"]).To(Equal("io.debezium.transforms.ExtractNewRecordState"))
 
 			esConnector, err := i.KafkaClient.GetConnector(
-				i.KafkaConnectors.ESConnectorName(pipeline.Status.PipelineVersion))
+				i.KafkaConnectors.ESConnectorName(synchronizer.Status.SynchronizerVersion))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(esConnector.GetName()).To(Equal(ResourceNamePrefix + ".es." + pipeline.Status.PipelineVersion))
+			Expect(esConnector.GetName()).To(Equal(ResourceNamePrefix + ".es." + synchronizer.Status.SynchronizerVersion))
 			esConnectorSpec := esConnector.Object["spec"].(map[string]interface{})
 			Expect(esConnectorSpec["class"]).To(Equal("io.confluent.connect.elasticsearch.ElasticsearchSinkConnector"))
 			Expect(esConnectorSpec["pause"]).To(Equal(false))
@@ -93,7 +94,7 @@ var _ = Describe("Pipeline operations", func() {
 			Expect(esConnectorConfig["linger.ms"]).To(Equal(int64(100)))
 			Expect(esConnectorConfig["retry.backoff.ms"]).To(Equal(int64(100)))
 			Expect(esConnectorConfig["tasks.max"]).To(Equal("1"))
-			Expect(esConnectorConfig["topics"]).To(Equal(ResourceNamePrefix + "." + pipeline.Status.PipelineVersion + ".public.hosts"))
+			Expect(esConnectorConfig["topics"]).To(Equal(ResourceNamePrefix + "." + synchronizer.Status.SynchronizerVersion + ".public.hosts"))
 			Expect(esConnectorConfig["transforms.expandJSON.sourceFields"]).To(Equal("tags"))
 			Expect(esConnectorConfig["transforms.flattenListString.sourceField"]).To(Equal("tags"))
 			Expect(esConnectorConfig["auto.create.indices.at.start"]).To(Equal(false))
@@ -110,8 +111,8 @@ var _ = Describe("Pipeline operations", func() {
 			Expect(esConnectorConfig["transforms.flattenListString.encode"]).To(Equal(true))
 			Expect(esConnectorConfig["transforms.flattenListString.outputField"]).To(Equal("tags_string"))
 			Expect(esConnectorConfig["transforms.renameTopic.type"]).To(Equal("org.apache.kafka.connect.transforms.RegexRouter"))
-			Expect(esConnectorConfig["transforms.renameTopic.regex"]).To(Equal(ResourceNamePrefix + "." + pipeline.Status.PipelineVersion + ".public.hosts"))
-			Expect(esConnectorConfig["transforms.renameTopic.replacement"]).To(Equal(ResourceNamePrefix + "." + pipeline.Status.PipelineVersion))
+			Expect(esConnectorConfig["transforms.renameTopic.regex"]).To(Equal(ResourceNamePrefix + "." + synchronizer.Status.SynchronizerVersion + ".public.hosts"))
+			Expect(esConnectorConfig["transforms.renameTopic.replacement"]).To(Equal(ResourceNamePrefix + "." + synchronizer.Status.SynchronizerVersion))
 			Expect(esConnectorConfig["type.name"]).To(Equal("_doc"))
 			Expect(esConnectorConfig["key.ignore"]).To(Equal("false"))
 			Expect(esConnectorConfig["transforms.valueToKey.fields"]).To(Equal("id"))
@@ -129,38 +130,38 @@ var _ = Describe("Pipeline operations", func() {
 			Expect(esConnectorConfig["transforms.flattenListString.mode"]).To(Equal("join"))
 			Expect(esConnectorConfig["max.in.flight.requests"]).To(Equal(int64(1)))
 
-			exists, err := i.EsClient.IndexExists(i.EsClient.ESIndexName(pipeline.Status.PipelineVersion))
+			exists, err := i.EsClient.IndexExists(i.EsClient.ESIndexName(synchronizer.Status.SynchronizerVersion))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(exists).To(BeTrue())
 
-			aliases, err := i.EsClient.GetCurrentIndicesWithAlias(*pipeline.Spec.ResourceNamePrefix)
+			aliases, err := i.EsClient.GetCurrentIndicesWithAlias(*synchronizer.Spec.ResourceNamePrefix)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(aliases).To(BeEmpty())
 
-			topics, err := i.KafkaTopics.ListTopicNamesForPipelineVersion(pipeline.Status.PipelineVersion)
-			Expect(topics).To(ContainElement(i.KafkaTopics.TopicName(pipeline.Status.PipelineVersion)))
+			topics, err := i.KafkaTopics.ListTopicNamesForSynchronizerVersion(synchronizer.Status.SynchronizerVersion)
+			Expect(topics).To(ContainElement(i.KafkaTopics.TopicName(synchronizer.Status.SynchronizerVersion)))
 		})
 
-		It("Creates ESPipeline for new xjoin pipeline", func() {
-			err := i.CreatePipeline()
+		It("Creates ESSynchronizer for new xjoin synchronizer", func() {
+			err := i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			_, err = i.ReconcileXJoin()
 			Expect(err).ToNot(HaveOccurred())
 
-			pipeline, err := i.GetPipeline()
+			synchronizer, err := i.GetSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.GetState()).To(Equal(xjoin.STATE_INITIAL_SYNC))
-			Expect(pipeline.Status.InitialSyncInProgress).To(BeTrue())
-			Expect(pipeline.GetValid()).To(Equal(metav1.ConditionUnknown))
+			Expect(synchronizer.GetState()).To(Equal(xjoin.STATE_INITIAL_SYNC))
+			Expect(synchronizer.Status.InitialSyncInProgress).To(BeTrue())
+			Expect(synchronizer.GetValid()).To(Equal(metav1.ConditionUnknown))
 
-			esPipeline, err := i.EsClient.GetESPipeline(pipeline.Status.PipelineVersion)
+			esSynchronizer, err := i.EsClient.GetESSynchronizer(synchronizer.Status.SynchronizerVersion)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(esPipeline).ToNot(BeEmpty())
-			Expect(esPipeline).To(HaveKey(i.EsClient.ESPipelineName(pipeline.Status.PipelineVersion)))
+			Expect(esSynchronizer).ToNot(BeEmpty())
+			Expect(esSynchronizer).To(HaveKey(i.EsClient.ESSynchronizerName(synchronizer.Status.SynchronizerVersion)))
 		})
 
 		It("Considers configmap configuration", func() {
-			err := i.CreatePipeline()
+			err := i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 
 			cm := map[string]string{
@@ -192,17 +193,17 @@ var _ = Describe("Pipeline operations", func() {
 			_, err = i.ReconcileXJoin()
 			Expect(err).ToNot(HaveOccurred())
 
-			pipeline, err := i.GetPipeline()
+			synchronizer, err := i.GetSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			esConnector, err := i.KafkaClient.GetConnector(
-				i.KafkaConnectors.ESConnectorName(pipeline.Status.PipelineVersion))
+				i.KafkaConnectors.ESConnectorName(synchronizer.Status.SynchronizerVersion))
 
 			Expect(err).ToNot(HaveOccurred())
-			Expect(esConnector.GetName()).To(Equal(ResourceNamePrefix + ".es." + pipeline.Status.PipelineVersion))
+			Expect(esConnector.GetName()).To(Equal(ResourceNamePrefix + ".es." + synchronizer.Status.SynchronizerVersion))
 			esConnectorSpec := esConnector.Object["spec"].(map[string]interface{})
 			esConnectorConfig := esConnectorSpec["config"].(map[string]interface{})
 			Expect(esConnectorConfig["tasks.max"]).To(Equal(cm["elasticsearch.connector.tasks.max"]))
-			Expect(esConnectorConfig["topics"]).To(Equal(ResourceNamePrefix + "." + pipeline.Status.PipelineVersion + ".public.hosts"))
+			Expect(esConnectorConfig["topics"]).To(Equal(ResourceNamePrefix + "." + synchronizer.Status.SynchronizerVersion + ".public.hosts"))
 			val, err := test.StrToInt64(cm["elasticsearch.connector.batch.size"])
 			Expect(err).ToNot(HaveOccurred())
 			Expect(esConnectorConfig["batch.size"]).To(Equal(val))
@@ -226,10 +227,10 @@ var _ = Describe("Pipeline operations", func() {
 			Expect(esConnectorConfig["linger.ms"]).To(Equal(val))
 
 			dbConnector, err := i.KafkaClient.GetConnector(
-				i.KafkaConnectors.DebeziumConnectorName(pipeline.Status.PipelineVersion))
+				i.KafkaConnectors.DebeziumConnectorName(synchronizer.Status.SynchronizerVersion))
 
 			Expect(err).ToNot(HaveOccurred())
-			Expect(dbConnector.GetName()).To(Equal(ResourceNamePrefix + ".db." + pipeline.Status.PipelineVersion))
+			Expect(dbConnector.GetName()).To(Equal(ResourceNamePrefix + ".db." + synchronizer.Status.SynchronizerVersion))
 			dbConnectorSpec := dbConnector.Object["spec"].(map[string]interface{})
 			dbConnectorConfig := dbConnectorSpec["config"].(map[string]interface{})
 			Expect(dbConnectorConfig["tasks.max"]).To(Equal(cm["debezium.connector.tasks.max"]))
@@ -260,7 +261,7 @@ var _ = Describe("Pipeline operations", func() {
 			err = i.CreateDbSecret(secretName)
 			Expect(err).ToNot(HaveOccurred())
 
-			err = i.CreatePipeline(&xjoin.XJoinPipelineSpec{HBIDBSecretName: &secretName})
+			err = i.CreateSynchronizer(&xjoin.XJoinSynchronizerSpec{HBIDBSecretName: &secretName})
 			Expect(err).ToNot(HaveOccurred())
 			_, err = i.ReconcileXJoin() //this will fail if the secret is missing
 			Expect(err).ToNot(HaveOccurred())
@@ -278,7 +279,7 @@ var _ = Describe("Pipeline operations", func() {
 			err = i.CreateESSecret(secretName)
 			Expect(err).ToNot(HaveOccurred())
 
-			err = i.CreatePipeline(&xjoin.XJoinPipelineSpec{ElasticSearchSecretName: &secretName})
+			err = i.CreateSynchronizer(&xjoin.XJoinSynchronizerSpec{ElasticSearchSecretName: &secretName})
 			Expect(err).ToNot(HaveOccurred())
 			_, err = i.ReconcileXJoin() //this will fail if the secret is missing
 			Expect(err).ToNot(HaveOccurred())
@@ -298,7 +299,7 @@ var _ = Describe("Pipeline operations", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(connectors.Items)).To(Equal(4))
 
-			err = i.CreatePipeline()
+			err = i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			_, err = i.ReconcileXJoin()
 			Expect(err).ToNot(HaveOccurred())
@@ -317,7 +318,7 @@ var _ = Describe("Pipeline operations", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(indices)).To(Equal(2))
 
-			err = i.CreatePipeline()
+			err = i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			_, err = i.ReconcileXJoin()
 			Expect(err).ToNot(HaveOccurred())
@@ -336,7 +337,7 @@ var _ = Describe("Pipeline operations", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(topics)).To(Equal(2))
 
-			err = i.CreatePipeline()
+			err = i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			_, err = i.ReconcileXJoin()
 			Expect(err).ToNot(HaveOccurred())
@@ -361,7 +362,7 @@ var _ = Describe("Pipeline operations", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(slots).To(ContainElements(slot1, slot2))
 
-			err = i.CreatePipeline(&xjoin.XJoinPipelineSpec{ResourceNamePrefix: &prefix})
+			err = i.CreateSynchronizer(&xjoin.XJoinSynchronizerSpec{ResourceNamePrefix: &prefix})
 			Expect(err).ToNot(HaveOccurred())
 			_, err = i.ReconcileXJoin()
 			Expect(err).ToNot(HaveOccurred())
@@ -375,28 +376,28 @@ var _ = Describe("Pipeline operations", func() {
 
 	Describe("InitialSync -> Valid", func() {
 		It("Creates the elasticsearch alias", func() {
-			err := i.CreatePipeline()
+			err := i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			_, err = i.ReconcileXJoin()
 			Expect(err).ToNot(HaveOccurred())
-			pipeline, err := i.GetPipeline()
+			synchronizer, err := i.GetSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.GetState()).To(Equal(xjoin.STATE_INITIAL_SYNC))
-			Expect(pipeline.Status.InitialSyncInProgress).To(BeTrue())
-			Expect(pipeline.GetValid()).To(Equal(metav1.ConditionUnknown))
+			Expect(synchronizer.GetState()).To(Equal(xjoin.STATE_INITIAL_SYNC))
+			Expect(synchronizer.Status.InitialSyncInProgress).To(BeTrue())
+			Expect(synchronizer.GetValid()).To(Equal(metav1.ConditionUnknown))
 
 			_, err = i.ReconcileValidation()
 			Expect(err).ToNot(HaveOccurred())
-			pipeline, err = i.ReconcileXJoin()
+			synchronizer, err = i.ReconcileXJoin()
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(pipeline.GetState()).To(Equal(xjoin.STATE_VALID))
-			Expect(pipeline.Status.InitialSyncInProgress).To(BeFalse())
-			Expect(pipeline.GetValid()).To(Equal(metav1.ConditionTrue))
+			Expect(synchronizer.GetState()).To(Equal(xjoin.STATE_VALID))
+			Expect(synchronizer.Status.InitialSyncInProgress).To(BeFalse())
+			Expect(synchronizer.GetValid()).To(Equal(metav1.ConditionTrue))
 		})
 
-		It("Triggers refresh if pipeline fails to become valid for too long", func() {
-			err := i.CreatePipeline()
+		It("Triggers refresh if synchronizer fails to become valid for too long", func() {
+			err := i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 
 			cm := map[string]string{
@@ -407,65 +408,65 @@ var _ = Describe("Pipeline operations", func() {
 			Expect(err).ToNot(HaveOccurred())
 			_, err = i.ReconcileXJoin()
 			Expect(err).ToNot(HaveOccurred())
-			pipeline, err := i.GetPipeline()
+			synchronizer, err := i.GetSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.GetState()).To(Equal(xjoin.STATE_INITIAL_SYNC))
-			Expect(pipeline.Status.InitialSyncInProgress).To(BeTrue())
-			Expect(pipeline.GetValid()).To(Equal(metav1.ConditionUnknown))
+			Expect(synchronizer.GetState()).To(Equal(xjoin.STATE_INITIAL_SYNC))
+			Expect(synchronizer.Status.InitialSyncInProgress).To(BeTrue())
+			Expect(synchronizer.GetValid()).To(Equal(metav1.ConditionUnknown))
 
-			err = i.KafkaConnectors.PauseElasticSearchConnector(pipeline.Status.PipelineVersion)
+			err = i.KafkaConnectors.PauseElasticSearchConnector(synchronizer.Status.SynchronizerVersion)
 			Expect(err).ToNot(HaveOccurred())
 			hostId, err := i.InsertSimpleHost()
 			Expect(err).ToNot(HaveOccurred())
 
 			_, err = i.ReconcileValidation()
 			Expect(err).ToNot(HaveOccurred())
-			pipeline, err = i.ReconcileXJoin()
+			synchronizer, err = i.ReconcileXJoin()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.GetState()).To(Equal(xjoin.STATE_INITIAL_SYNC))
-			Expect(pipeline.Status.InitialSyncInProgress).To(BeTrue())
-			Expect(pipeline.GetValid()).To(Equal(metav1.ConditionFalse))
+			Expect(synchronizer.GetState()).To(Equal(xjoin.STATE_INITIAL_SYNC))
+			Expect(synchronizer.Status.InitialSyncInProgress).To(BeTrue())
+			Expect(synchronizer.GetValid()).To(Equal(metav1.ConditionFalse))
 
 			_, err = i.ReconcileValidation()
 			Expect(err).ToNot(HaveOccurred())
-			pipeline, err = i.ReconcileXJoin()
+			synchronizer, err = i.ReconcileXJoin()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.GetState()).To(Equal(xjoin.STATE_NEW))
-			Expect(pipeline.Status.InitialSyncInProgress).To(BeFalse())
-			Expect(pipeline.GetValid()).To(Equal(metav1.ConditionUnknown))
-			Expect(pipeline.Status.PipelineVersion).To(Equal(""))
+			Expect(synchronizer.GetState()).To(Equal(xjoin.STATE_NEW))
+			Expect(synchronizer.Status.InitialSyncInProgress).To(BeFalse())
+			Expect(synchronizer.GetValid()).To(Equal(metav1.ConditionUnknown))
+			Expect(synchronizer.Status.SynchronizerVersion).To(Equal(""))
 
 			_, err = i.ReconcileValidation()
 			Expect(err).ToNot(HaveOccurred())
-			pipeline, err = i.ReconcileXJoin()
+			synchronizer, err = i.ReconcileXJoin()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.PipelineVersion).ToNot(Equal(""))
-			Expect(pipeline.GetState()).To(Equal(xjoin.STATE_INITIAL_SYNC))
-			Expect(pipeline.Status.InitialSyncInProgress).To(BeTrue())
-			Expect(pipeline.GetValid()).To(Equal(metav1.ConditionUnknown))
+			Expect(synchronizer.Status.SynchronizerVersion).ToNot(Equal(""))
+			Expect(synchronizer.GetState()).To(Equal(xjoin.STATE_INITIAL_SYNC))
+			Expect(synchronizer.Status.InitialSyncInProgress).To(BeTrue())
+			Expect(synchronizer.GetValid()).To(Equal(metav1.ConditionUnknown))
 
-			err = i.IndexSimpleDocument(pipeline.Status.PipelineVersion, hostId)
+			err = i.IndexSimpleDocument(synchronizer.Status.SynchronizerVersion, hostId)
 			Expect(err).ToNot(HaveOccurred())
 
 			_, err = i.ReconcileValidation()
 			Expect(err).ToNot(HaveOccurred())
-			pipeline, err = i.ReconcileXJoin()
+			synchronizer, err = i.ReconcileXJoin()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.GetState()).To(Equal(xjoin.STATE_VALID))
-			Expect(pipeline.Status.InitialSyncInProgress).To(BeFalse())
-			Expect(pipeline.GetValid()).To(Equal(metav1.ConditionTrue))
+			Expect(synchronizer.GetState()).To(Equal(xjoin.STATE_VALID))
+			Expect(synchronizer.Status.InitialSyncInProgress).To(BeFalse())
+			Expect(synchronizer.GetValid()).To(Equal(metav1.ConditionTrue))
 		})
 
-		It("Sets active resource names for a valid pipeline", func() {
-			pipeline, err := i.CreateValidPipeline()
+		It("Sets active resource names for a valid synchronizer", func() {
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).To(Equal(i.EsClient.ESIndexName(pipeline.Status.PipelineVersion)))
-			Expect(pipeline.Status.ActiveTopicName).To(Equal(i.KafkaTopics.TopicName(pipeline.Status.PipelineVersion)))
-			Expect(pipeline.Status.ActiveAliasName).To(Equal(i.EsClient.AliasName()))
-			Expect(pipeline.Status.ActiveDebeziumConnectorName).To(
-				Equal(i.KafkaConnectors.DebeziumConnectorName(pipeline.Status.PipelineVersion)))
-			Expect(pipeline.Status.ActiveESConnectorName).To(
-				Equal(i.KafkaConnectors.ESConnectorName(pipeline.Status.PipelineVersion)))
+			Expect(synchronizer.Status.ActiveIndexName).To(Equal(i.EsClient.ESIndexName(synchronizer.Status.SynchronizerVersion)))
+			Expect(synchronizer.Status.ActiveTopicName).To(Equal(i.KafkaTopics.TopicName(synchronizer.Status.SynchronizerVersion)))
+			Expect(synchronizer.Status.ActiveAliasName).To(Equal(i.EsClient.AliasName()))
+			Expect(synchronizer.Status.ActiveDebeziumConnectorName).To(
+				Equal(i.KafkaConnectors.DebeziumConnectorName(synchronizer.Status.SynchronizerVersion)))
+			Expect(synchronizer.Status.ActiveESConnectorName).To(
+				Equal(i.KafkaConnectors.ESConnectorName(synchronizer.Status.SynchronizerVersion)))
 		})
 	})
 
@@ -478,52 +479,52 @@ var _ = Describe("Pipeline operations", func() {
 				err := i.CreateConfigMap("xjoin", cm)
 				Expect(err).ToNot(HaveOccurred())
 
-				pipeline, err := i.CreateValidPipeline()
+				synchronizer, err := i.CreateValidSynchronizer()
 				Expect(err).ToNot(HaveOccurred())
-				activeIndex := pipeline.Status.ActiveIndexName
+				activeIndex := synchronizer.Status.ActiveIndexName
 
-				err = i.KafkaConnectors.PauseElasticSearchConnector(pipeline.Status.PipelineVersion)
+				err = i.KafkaConnectors.PauseElasticSearchConnector(synchronizer.Status.SynchronizerVersion)
 				Expect(err).ToNot(HaveOccurred())
 				hostId, err := i.InsertSimpleHost()
 				Expect(err).ToNot(HaveOccurred())
 
-				pipeline, err = i.ExpectInvalidReconcile()
+				synchronizer, err = i.ExpectInvalidReconcile()
 				Expect(err).ToNot(HaveOccurred())
-				Expect(pipeline.Status.ActiveIndexName).To(Equal(activeIndex))
+				Expect(synchronizer.Status.ActiveIndexName).To(Equal(activeIndex))
 
-				pipeline, err = i.ExpectNewReconcile()
+				synchronizer, err = i.ExpectNewReconcile()
 				Expect(err).ToNot(HaveOccurred())
-				Expect(pipeline.Status.ActiveIndexName).To(Equal(activeIndex))
+				Expect(synchronizer.Status.ActiveIndexName).To(Equal(activeIndex))
 
-				pipeline, err = i.ExpectInitSyncUnknownReconcile()
+				synchronizer, err = i.ExpectInitSyncUnknownReconcile()
 				Expect(err).ToNot(HaveOccurred())
-				Expect(pipeline.Status.ActiveIndexName).To(Equal(activeIndex))
+				Expect(synchronizer.Status.ActiveIndexName).To(Equal(activeIndex))
 
-				err = i.IndexSimpleDocument(pipeline.Status.PipelineVersion, hostId)
+				err = i.IndexSimpleDocument(synchronizer.Status.SynchronizerVersion, hostId)
 				Expect(err).ToNot(HaveOccurred())
 
-				pipeline, err = i.ExpectValidReconcile()
+				synchronizer, err = i.ExpectValidReconcile()
 				Expect(err).ToNot(HaveOccurred())
-				Expect(pipeline.Status.ActiveIndexName).ToNot(Equal(activeIndex))
+				Expect(synchronizer.Status.ActiveIndexName).ToNot(Equal(activeIndex))
 			})
 		})
 	})
 
 	Describe("Valid -> New", func() {
 		It("Preserves active resource names during refresh", func() {
-			pipeline, err := i.CreateValidPipeline()
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			activeIndexName := i.EsClient.ESIndexName(pipeline.Status.PipelineVersion)
-			activeTopicName := i.KafkaTopics.TopicName(pipeline.Status.PipelineVersion)
+			activeIndexName := i.EsClient.ESIndexName(synchronizer.Status.SynchronizerVersion)
+			activeTopicName := i.KafkaTopics.TopicName(synchronizer.Status.SynchronizerVersion)
 			activeAliasName := i.EsClient.AliasName()
-			activeDebeziumConnectorName := i.KafkaConnectors.DebeziumConnectorName(pipeline.Status.PipelineVersion)
-			activeESConnectorName := i.KafkaConnectors.ESConnectorName(pipeline.Status.PipelineVersion)
+			activeDebeziumConnectorName := i.KafkaConnectors.DebeziumConnectorName(synchronizer.Status.SynchronizerVersion)
+			activeESConnectorName := i.KafkaConnectors.ESConnectorName(synchronizer.Status.SynchronizerVersion)
 
-			Expect(pipeline.Status.ActiveIndexName).To(Equal(activeIndexName))
-			Expect(pipeline.Status.ActiveTopicName).To(Equal(activeTopicName))
-			Expect(pipeline.Status.ActiveAliasName).To(Equal(activeAliasName))
-			Expect(pipeline.Status.ActiveDebeziumConnectorName).To(Equal(activeDebeziumConnectorName))
-			Expect(pipeline.Status.ActiveESConnectorName).To(Equal(activeESConnectorName))
+			Expect(synchronizer.Status.ActiveIndexName).To(Equal(activeIndexName))
+			Expect(synchronizer.Status.ActiveTopicName).To(Equal(activeTopicName))
+			Expect(synchronizer.Status.ActiveAliasName).To(Equal(activeAliasName))
+			Expect(synchronizer.Status.ActiveDebeziumConnectorName).To(Equal(activeDebeziumConnectorName))
+			Expect(synchronizer.Status.ActiveESConnectorName).To(Equal(activeESConnectorName))
 
 			//trigger refresh with a new configmap
 			validationPeriodMinutes := "1"
@@ -533,19 +534,19 @@ var _ = Describe("Pipeline operations", func() {
 			err = i.CreateConfigMap("xjoin", cm)
 			Expect(err).ToNot(HaveOccurred())
 
-			pipeline, err = i.ExpectInitSyncUnknownReconcile()
+			synchronizer, err = i.ExpectInitSyncUnknownReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).To(Equal(activeIndexName))
-			Expect(pipeline.Status.ActiveTopicName).To(Equal(activeTopicName))
-			Expect(pipeline.Status.ActiveAliasName).To(Equal(activeAliasName))
-			Expect(pipeline.Status.ActiveDebeziumConnectorName).To(Equal(activeDebeziumConnectorName))
-			Expect(pipeline.Status.ActiveESConnectorName).To(Equal(activeESConnectorName))
+			Expect(synchronizer.Status.ActiveIndexName).To(Equal(activeIndexName))
+			Expect(synchronizer.Status.ActiveTopicName).To(Equal(activeTopicName))
+			Expect(synchronizer.Status.ActiveAliasName).To(Equal(activeAliasName))
+			Expect(synchronizer.Status.ActiveDebeziumConnectorName).To(Equal(activeDebeziumConnectorName))
+			Expect(synchronizer.Status.ActiveESConnectorName).To(Equal(activeESConnectorName))
 		})
 
 		It("Triggers refresh if configmap is created", func() {
-			pipeline, err := i.CreateValidPipeline()
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			activeIndex := pipeline.Status.ActiveIndexName
+			activeIndex := synchronizer.Status.ActiveIndexName
 
 			cm := map[string]string{
 				"debezium.connector.errors.log.enable": "false",
@@ -553,11 +554,11 @@ var _ = Describe("Pipeline operations", func() {
 			err = i.CreateConfigMap("xjoin", cm)
 			Expect(err).ToNot(HaveOccurred())
 
-			pipeline, err = i.ExpectInitSyncUnknownReconcile()
+			synchronizer, err = i.ExpectInitSyncUnknownReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).To(Equal(activeIndex))
+			Expect(synchronizer.Status.ActiveIndexName).To(Equal(activeIndex))
 
-			connector, err := i.KafkaClient.GetConnector(i.KafkaConnectors.DebeziumConnectorName(pipeline.Status.PipelineVersion))
+			connector, err := i.KafkaClient.GetConnector(i.KafkaConnectors.DebeziumConnectorName(synchronizer.Status.SynchronizerVersion))
 			Expect(err).ToNot(HaveOccurred())
 			spec := connector.Object["spec"].(map[string]interface{})
 			config := spec["config"].(map[string]interface{})
@@ -570,9 +571,9 @@ var _ = Describe("Pipeline operations", func() {
 			}
 			err := i.CreateConfigMap("xjoin", cm)
 			Expect(err).ToNot(HaveOccurred())
-			pipeline, err := i.CreateValidPipeline()
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			activeIndex := pipeline.Status.ActiveIndexName
+			activeIndex := synchronizer.Status.ActiveIndexName
 
 			ctx, cancel := utils.DefaultContext()
 			defer cancel()
@@ -585,11 +586,11 @@ var _ = Describe("Pipeline operations", func() {
 			err = test.Client.Update(ctx, configMap)
 			Expect(err).ToNot(HaveOccurred())
 
-			pipeline, err = i.ExpectInitSyncUnknownReconcile()
+			synchronizer, err = i.ExpectInitSyncUnknownReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).To(Equal(activeIndex))
+			Expect(synchronizer.Status.ActiveIndexName).To(Equal(activeIndex))
 
-			connector, err := i.KafkaClient.GetConnector(i.KafkaConnectors.DebeziumConnectorName(pipeline.Status.PipelineVersion))
+			connector, err := i.KafkaClient.GetConnector(i.KafkaConnectors.DebeziumConnectorName(synchronizer.Status.SynchronizerVersion))
 			Expect(err).ToNot(HaveOccurred())
 			spec := connector.Object["spec"].(map[string]interface{})
 			config := spec["config"].(map[string]interface{})
@@ -597,9 +598,9 @@ var _ = Describe("Pipeline operations", func() {
 		})
 
 		It("Triggers refresh if database secret changes", func() {
-			pipeline, err := i.CreateValidPipeline()
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			activeIndex := pipeline.Status.ActiveIndexName
+			activeIndex := synchronizer.Status.ActiveIndexName
 
 			ctx, cancel := utils.DefaultContext()
 			defer cancel()
@@ -616,12 +617,12 @@ var _ = Describe("Pipeline operations", func() {
 			err = test.Client.Update(ctx, secret)
 
 			//run a reconcile
-			pipeline, err = i.ExpectInitSyncUnknownReconcile()
+			synchronizer, err = i.ExpectInitSyncUnknownReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).To(Equal(activeIndex))
+			Expect(synchronizer.Status.ActiveIndexName).To(Equal(activeIndex))
 
-			//the new pipeline should use the updated username/password from the HBI DB secret
-			connector, err := i.KafkaClient.GetConnector(i.KafkaConnectors.DebeziumConnectorName(pipeline.Status.PipelineVersion))
+			//the new synchronizer should use the updated username/password from the HBI DB secret
+			connector, err := i.KafkaClient.GetConnector(i.KafkaConnectors.DebeziumConnectorName(synchronizer.Status.SynchronizerVersion))
 			Expect(err).ToNot(HaveOccurred())
 			connectorSpec := connector.Object["spec"].(map[string]interface{})
 			connectorConfig := connectorSpec["config"].(map[string]interface{})
@@ -630,9 +631,9 @@ var _ = Describe("Pipeline operations", func() {
 		})
 
 		It("Triggers refresh if elasticsearch secret changes", func() {
-			pipeline, err := i.CreateValidPipeline()
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			activeIndex := pipeline.Status.ActiveIndexName
+			activeIndex := synchronizer.Status.ActiveIndexName
 
 			ctx, cancel := utils.DefaultContext()
 			defer cancel()
@@ -643,11 +644,11 @@ var _ = Describe("Pipeline operations", func() {
 			secret.Data["newfield"] = []byte("value")
 			err = test.Client.Update(ctx, secret)
 
-			pipeline, err = i.ExpectInitSyncUnknownReconcile()
+			synchronizer, err = i.ExpectInitSyncUnknownReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).To(Equal(activeIndex))
+			Expect(synchronizer.Status.ActiveIndexName).To(Equal(activeIndex))
 
-			connector, err := i.KafkaClient.GetConnector(i.KafkaConnectors.ESConnectorName(pipeline.Status.PipelineVersion))
+			connector, err := i.KafkaClient.GetConnector(i.KafkaConnectors.ESConnectorName(synchronizer.Status.SynchronizerVersion))
 			Expect(err).ToNot(HaveOccurred())
 			connectorSpec := connector.Object["spec"].(map[string]interface{})
 			connectorConfig := connectorSpec["config"].(map[string]interface{})
@@ -657,58 +658,58 @@ var _ = Describe("Pipeline operations", func() {
 		})
 
 		It("Triggers refresh if index disappears", func() {
-			pipeline, err := i.CreateValidPipeline()
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			err = i.EsClient.DeleteIndex(pipeline.Status.PipelineVersion)
+			err = i.EsClient.DeleteIndex(synchronizer.Status.SynchronizerVersion)
 			Expect(err).ToNot(HaveOccurred())
-			pipeline, err = i.ExpectInitSyncUnknownReconcile()
+			synchronizer, err = i.ExpectInitSyncUnknownReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).To(Equal("")) //index was removed so there's no active index
-			pipeline, err = i.ExpectValidReconcile()
+			Expect(synchronizer.Status.ActiveIndexName).To(Equal("")) //index was removed so there's no active index
+			synchronizer, err = i.ExpectValidReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).ToNot(Equal(""))
+			Expect(synchronizer.Status.ActiveIndexName).ToNot(Equal(""))
 		})
 
 		It("Triggers refresh if elasticsearch connector disappears", func() {
-			pipeline, err := i.CreateValidPipeline()
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			activeIndex := pipeline.Status.ActiveIndexName
-			err = i.KafkaClient.DeleteConnector(i.KafkaConnectors.ESConnectorName(pipeline.Status.PipelineVersion))
+			activeIndex := synchronizer.Status.ActiveIndexName
+			err = i.KafkaClient.DeleteConnector(i.KafkaConnectors.ESConnectorName(synchronizer.Status.SynchronizerVersion))
 			Expect(err).ToNot(HaveOccurred())
-			pipeline, err = i.ExpectInitSyncUnknownReconcile()
+			synchronizer, err = i.ExpectInitSyncUnknownReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).To(Equal(activeIndex))
-			pipeline, err = i.ExpectValidReconcile()
+			Expect(synchronizer.Status.ActiveIndexName).To(Equal(activeIndex))
+			synchronizer, err = i.ExpectValidReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).ToNot(Equal(activeIndex))
+			Expect(synchronizer.Status.ActiveIndexName).ToNot(Equal(activeIndex))
 		})
 
 		It("Triggers refresh if database connector disappears", func() {
-			pipeline, err := i.CreateValidPipeline()
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			activeIndex := pipeline.Status.ActiveIndexName
-			err = i.KafkaClient.DeleteConnector(i.KafkaConnectors.DebeziumConnectorName(pipeline.Status.PipelineVersion))
+			activeIndex := synchronizer.Status.ActiveIndexName
+			err = i.KafkaClient.DeleteConnector(i.KafkaConnectors.DebeziumConnectorName(synchronizer.Status.SynchronizerVersion))
 			Expect(err).ToNot(HaveOccurred())
-			pipeline, err = i.ExpectInitSyncUnknownReconcile()
+			synchronizer, err = i.ExpectInitSyncUnknownReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).To(Equal(activeIndex))
-			pipeline, err = i.ExpectValidReconcile()
+			Expect(synchronizer.Status.ActiveIndexName).To(Equal(activeIndex))
+			synchronizer, err = i.ExpectValidReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).ToNot(Equal(activeIndex))
+			Expect(synchronizer.Status.ActiveIndexName).ToNot(Equal(activeIndex))
 		})
 
-		It("Triggers refresh if ES pipeline disappears", func() {
-			pipeline, err := i.CreateValidPipeline()
+		It("Triggers refresh if ES synchronizer disappears", func() {
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			activeIndex := pipeline.Status.ActiveIndexName
-			err = i.EsClient.DeleteESPipelineByVersion(pipeline.Status.PipelineVersion)
+			activeIndex := synchronizer.Status.ActiveIndexName
+			err = i.EsClient.DeleteESSynchronizerByVersion(synchronizer.Status.SynchronizerVersion)
 			Expect(err).ToNot(HaveOccurred())
-			pipeline, err = i.ExpectInitSyncUnknownReconcile()
+			synchronizer, err = i.ExpectInitSyncUnknownReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).To(Equal(activeIndex))
-			pipeline, err = i.ExpectValidReconcile()
+			Expect(synchronizer.Status.ActiveIndexName).To(Equal(activeIndex))
+			synchronizer, err = i.ExpectValidReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).ToNot(Equal(activeIndex))
+			Expect(synchronizer.Status.ActiveIndexName).ToNot(Equal(activeIndex))
 		})
 	})
 
@@ -729,25 +730,25 @@ var _ = Describe("Pipeline operations", func() {
 		})
 
 		It("Triggers refresh if ConnectCluster changes", func() {
-			pipeline, err := i.CreateValidPipeline()
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 
 			defer gock.Off()
 
 			gock.New("http://newCluster-connect-api.test.svc:8083").
-				Get("/connectors/"+pipeline.Status.ActiveESConnectorName+"/status").
+				Get("/connectors/"+synchronizer.Status.ActiveESConnectorName+"/status").
 				Reply(200).
 				BodyString("{}").
 				AddHeader("Content-Type", "application/json")
 
 			gock.New("http://newCluster-connect-api.test.svc:8083").
-				Get("/connectors/"+pipeline.Status.ActiveDebeziumConnectorName+"/status").
+				Get("/connectors/"+synchronizer.Status.ActiveDebeziumConnectorName+"/status").
 				Reply(200).
 				BodyString("{}").
 				AddHeader("Content-Type", "application/json")
 
-			err = i.TestSpecFieldChangedForPipeline(
-				pipeline, "ConnectCluster", "newCluster", reflect.String)
+			err = i.TestSpecFieldChangedForSynchronizer(
+				synchronizer, "ConnectCluster", "newCluster", reflect.String)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -771,63 +772,63 @@ var _ = Describe("Pipeline operations", func() {
 	})
 
 	Describe("-> Removed", func() {
-		It("Artifacts removed when initializing pipeline is removed", func() {
-			err := i.CreatePipeline()
+		It("Artifacts removed when initializing synchronizer is removed", func() {
+			err := i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			pipeline, err := i.ExpectInitSyncUnknownReconcile()
+			synchronizer, err := i.ExpectInitSyncUnknownReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			err = i.DeletePipeline(pipeline)
+			err = i.DeleteSynchronizer(synchronizer)
 			Expect(err).ToNot(HaveOccurred())
-			err = i.ExpectPipelineVersionToBeRemoved(pipeline.Status.PipelineVersion)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("Artifacts removed when new pipeline is removed", func() {
-			err := i.CreatePipeline()
-			Expect(err).ToNot(HaveOccurred())
-			pipeline, err := i.ExpectInitSyncUnknownReconcile()
-			Expect(err).ToNot(HaveOccurred())
-			err = i.DeletePipeline(pipeline)
-			Expect(err).ToNot(HaveOccurred())
-			err = i.ExpectPipelineVersionToBeRemoved(pipeline.Status.PipelineVersion)
+			err = i.ExpectSynchronizerVersionToBeRemoved(synchronizer.Status.SynchronizerVersion)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("Artifacts removed when valid pipeline is removed", func() {
-			pipeline, err := i.CreateValidPipeline()
+		It("Artifacts removed when new synchronizer is removed", func() {
+			err := i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			err = i.DeletePipeline(pipeline)
+			synchronizer, err := i.ExpectInitSyncUnknownReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			err = i.ExpectPipelineVersionToBeRemoved(pipeline.Status.PipelineVersion)
+			err = i.DeleteSynchronizer(synchronizer)
+			Expect(err).ToNot(HaveOccurred())
+			err = i.ExpectSynchronizerVersionToBeRemoved(synchronizer.Status.SynchronizerVersion)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("Artifacts removed when refreshing pipeline is removed", func() {
-			pipeline, err := i.CreateValidPipeline()
+		It("Artifacts removed when valid synchronizer is removed", func() {
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			activeIndex := pipeline.Status.ActiveIndexName
-			firstVersion := pipeline.Status.PipelineVersion
+			err = i.DeleteSynchronizer(synchronizer)
+			Expect(err).ToNot(HaveOccurred())
+			err = i.ExpectSynchronizerVersionToBeRemoved(synchronizer.Status.SynchronizerVersion)
+			Expect(err).ToNot(HaveOccurred())
+		})
 
-			//trigger refresh so there is an active and initializing pipeline
+		It("Artifacts removed when refreshing synchronizer is removed", func() {
+			synchronizer, err := i.CreateValidSynchronizer()
+			Expect(err).ToNot(HaveOccurred())
+			activeIndex := synchronizer.Status.ActiveIndexName
+			firstVersion := synchronizer.Status.SynchronizerVersion
+
+			//trigger refresh so there is an active and initializing synchronizer
 			ctx, cancel := utils.DefaultContext()
 			defer cancel()
 			secret, err := k8sUtils.FetchSecret(test.Client, i.NamespacedName.Namespace, i.Parameters.ElasticSearchSecretName.String(), ctx)
 			Expect(err).ToNot(HaveOccurred())
 			secret.Data["newfield"] = []byte("value")
 			err = test.Client.Update(ctx, secret)
-			pipeline, err = i.ExpectInitSyncUnknownReconcile()
+			synchronizer, err = i.ExpectInitSyncUnknownReconcile()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.Status.ActiveIndexName).To(Equal(activeIndex))
-			secondVersion := pipeline.Status.PipelineVersion
+			Expect(synchronizer.Status.ActiveIndexName).To(Equal(activeIndex))
+			secondVersion := synchronizer.Status.SynchronizerVersion
 
 			//give connect time to create resources
 			time.Sleep(10 * time.Second)
 
-			err = i.DeletePipeline(pipeline)
+			err = i.DeleteSynchronizer(synchronizer)
 			Expect(err).ToNot(HaveOccurred())
-			err = i.ExpectPipelineVersionToBeRemoved(firstVersion)
+			err = i.ExpectSynchronizerVersionToBeRemoved(firstVersion)
 			Expect(err).ToNot(HaveOccurred())
-			err = i.ExpectPipelineVersionToBeRemoved(secondVersion)
+			err = i.ExpectSynchronizerVersionToBeRemoved(secondVersion)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -840,7 +841,7 @@ var _ = Describe("Pipeline operations", func() {
 			err = test.Client.Update(ctx, secret)
 
 			//this will fail due to incorrect secret
-			err = i.CreatePipeline()
+			err = i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			err = i.ReconcileXJoinWithError()
 			Expect(err).To(HaveOccurred())
@@ -872,7 +873,7 @@ var _ = Describe("Pipeline operations", func() {
 			secret.Data["endpoint"] = []byte("invalidurl")
 			err = test.Client.Update(ctx, secret)
 
-			err = i.CreatePipeline()
+			err = i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			err = i.ReconcileXJoinWithError()
 			Expect(err).To(HaveOccurred())
@@ -887,7 +888,7 @@ var _ = Describe("Pipeline operations", func() {
 			secret.Data["db.host"] = []byte("invalidurl")
 			err = test.Client.Update(ctx, secret)
 
-			err = i.CreatePipeline()
+			err = i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			err = i.ReconcileXJoinWithError()
 			Expect(err).To(HaveOccurred())
@@ -896,10 +897,10 @@ var _ = Describe("Pipeline operations", func() {
 
 		It("Fails if the unable to create Kafka Topic", func() {
 			namespace := "invalid"
-			spec := xjoin.XJoinPipelineSpec{
+			spec := xjoin.XJoinSynchronizerSpec{
 				KafkaClusterNamespace: &namespace,
 			}
-			err := i.CreatePipeline(&spec)
+			err := i.CreateSynchronizer(&spec)
 			Expect(err).ToNot(HaveOccurred())
 			err = i.ReconcileXJoinWithError()
 			Expect(err).To(HaveOccurred())
@@ -915,7 +916,7 @@ var _ = Describe("Pipeline operations", func() {
 			}
 			err := i.CreateConfigMap("xjoin", cm)
 			Expect(err).ToNot(HaveOccurred())
-			err = i.CreatePipeline()
+			err = i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			err = i.ReconcileXJoinWithError()
 			Expect(err).To(HaveOccurred())
@@ -931,7 +932,7 @@ var _ = Describe("Pipeline operations", func() {
 			}
 			err := i.CreateConfigMap("xjoin", cm)
 			Expect(err).ToNot(HaveOccurred())
-			err = i.CreatePipeline()
+			err = i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			err = i.ReconcileXJoinWithError()
 			Expect(err).To(HaveOccurred())
@@ -943,10 +944,10 @@ var _ = Describe("Pipeline operations", func() {
 
 		It("Fails if ES Index cannot be created", func() {
 			invalidPrefix := "invalidPrefix"
-			spec := &xjoin.XJoinPipelineSpec{
+			spec := &xjoin.XJoinSynchronizerSpec{
 				ResourceNamePrefix: &invalidPrefix,
 			}
-			err := i.CreatePipeline(spec)
+			err := i.CreateSynchronizer(spec)
 			Expect(err).ToNot(HaveOccurred())
 			err = i.ReconcileXJoinWithError()
 			Expect(err).To(HaveOccurred())
@@ -955,13 +956,13 @@ var _ = Describe("Pipeline operations", func() {
 			Expect(recorder.Events).To(HaveLen(1))
 		})
 
-		It("Fails if ESPipeline cannot be created", func() {
+		It("Fails if ESSynchronizer cannot be created", func() {
 			cm := map[string]string{
-				"elasticsearch.pipeline.template": "invalid",
+				"elasticsearch.synchronizer.template": "invalid",
 			}
 			err := i.CreateConfigMap("xjoin", cm)
 			Expect(err).ToNot(HaveOccurred())
-			err = i.CreatePipeline()
+			err = i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 			err = i.ReconcileXJoinWithError()
 			Expect(err).To(HaveOccurred())
@@ -979,28 +980,28 @@ var _ = Describe("Pipeline operations", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}(i, serviceName)
 
-			pipeline, err := i.CreateValidPipeline()
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			activePipelineVersion := pipeline.Status.ActivePipelineVersion
+			activeSynchronizerVersion := synchronizer.Status.ActiveSynchronizerVersion
 
-			err = i.WaitForConnectorToBeCreated(pipeline.Status.ActiveESConnectorName)
+			err = i.WaitForConnectorToBeCreated(synchronizer.Status.ActiveESConnectorName)
 			Expect(err).ToNot(HaveOccurred())
 
 			//pause connector reconciliation, so it can be modified to an invalid state
 			defer func(i *Iteration, connectorName string) {
 				err := i.ResumeConnectorReconciliation(connectorName)
 				Expect(err).ToNot(HaveOccurred())
-			}(i, pipeline.Status.ActiveESConnectorName)
-			err = i.PauseConnectorReconciliation(pipeline.Status.ActiveESConnectorName)
+			}(i, synchronizer.Status.ActiveESConnectorName)
+			err = i.PauseConnectorReconciliation(synchronizer.Status.ActiveESConnectorName)
 			Expect(err).ToNot(HaveOccurred())
 
 			//update es connector config with invalid url
 			err = i.SetESConnectorURL(
 				"http://"+serviceName+".test.svc:9200",
-				pipeline.Status.ActiveESConnectorName)
+				synchronizer.Status.ActiveESConnectorName)
 			Expect(err).ToNot(HaveOccurred())
 
-			err = i.WaitForConnectorTaskToFail(pipeline.Status.ActiveESConnectorName)
+			err = i.WaitForConnectorTaskToFail(synchronizer.Status.ActiveESConnectorName)
 			Expect(err).ToNot(HaveOccurred())
 
 			//create service with invalid url
@@ -1011,18 +1012,18 @@ var _ = Describe("Pipeline operations", func() {
 			time.Sleep(5 * time.Second)
 
 			//reconcile
-			pipeline, err = i.ExpectValidReconcile()
+			synchronizer, err = i.ExpectValidReconcile()
 			Expect(err).ToNot(HaveOccurred())
 
 			//validate task is running
-			newTasks, err := i.KafkaConnectors.ListConnectorTasks(pipeline.Status.ActiveESConnectorName)
+			newTasks, err := i.KafkaConnectors.ListConnectorTasks(synchronizer.Status.ActiveESConnectorName)
 			Expect(err).ToNot(HaveOccurred())
 			for _, task := range newTasks {
 				Expect(task["state"]).To(Equal("RUNNING"))
 			}
 
 			//validate no refresh occurred
-			Expect(pipeline.Status.ActivePipelineVersion).To(Equal(activePipelineVersion))
+			Expect(synchronizer.Status.ActiveSynchronizerVersion).To(Equal(activeSynchronizerVersion))
 		})
 
 		It("Restarts failed DB connector task without a refresh", func() {
@@ -1033,19 +1034,19 @@ var _ = Describe("Pipeline operations", func() {
 			}(i, dbHost)
 			defer test.ForwardPorts()
 
-			pipeline, err := i.CreateValidPipeline()
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			activePipelineVersion := pipeline.Status.ActivePipelineVersion
+			activeSynchronizerVersion := synchronizer.Status.ActiveSynchronizerVersion
 
-			err = i.WaitForConnectorToBeCreated(pipeline.Status.ActiveDebeziumConnectorName)
+			err = i.WaitForConnectorToBeCreated(synchronizer.Status.ActiveDebeziumConnectorName)
 			Expect(err).ToNot(HaveOccurred())
 
 			//pause connector reconciliation, so it can be modified to an invalid state
 			defer func(i *Iteration, connectorName string) {
 				err := i.ResumeConnectorReconciliation(connectorName)
 				Expect(err).ToNot(HaveOccurred())
-			}(i, pipeline.Status.ActiveDebeziumConnectorName)
-			err = i.PauseConnectorReconciliation(pipeline.Status.ActiveDebeziumConnectorName)
+			}(i, synchronizer.Status.ActiveDebeziumConnectorName)
+			err = i.PauseConnectorReconciliation(synchronizer.Status.ActiveDebeziumConnectorName)
 			Expect(err).ToNot(HaveOccurred())
 
 			//create the service, do the PUT, then delete the service
@@ -1055,7 +1056,7 @@ var _ = Describe("Pipeline operations", func() {
 			time.Sleep(2 * time.Second)
 			err = i.SetDBConnectorHost(
 				dbHost+".test.svc",
-				pipeline.Status.ActiveDebeziumConnectorName)
+				synchronizer.Status.ActiveDebeziumConnectorName)
 			Expect(err).ToNot(HaveOccurred())
 			time.Sleep(2 * time.Second)
 			err = i.DeleteService(dbHost)
@@ -1063,11 +1064,11 @@ var _ = Describe("Pipeline operations", func() {
 
 			//give the connector time to realize it can't connect
 			time.Sleep(10 * time.Second)
-			err = i.KafkaConnectors.RestartTaskForConnector(pipeline.Status.ActiveDebeziumConnectorName, 0)
+			err = i.KafkaConnectors.RestartTaskForConnector(synchronizer.Status.ActiveDebeziumConnectorName, 0)
 			Expect(err).ToNot(HaveOccurred())
 
 			//validate task is failed
-			err = i.WaitForConnectorTaskToFail(pipeline.Status.ActiveDebeziumConnectorName)
+			err = i.WaitForConnectorTaskToFail(synchronizer.Status.ActiveDebeziumConnectorName)
 			Expect(err).ToNot(HaveOccurred())
 
 			//create service with invalid url
@@ -1078,28 +1079,28 @@ var _ = Describe("Pipeline operations", func() {
 			time.Sleep(5 * time.Second)
 
 			//reconcile
-			pipeline, err = i.ExpectValidReconcile()
+			synchronizer, err = i.ExpectValidReconcile()
 			Expect(err).ToNot(HaveOccurred())
 
 			//validate task is running
-			newTasks, err := i.KafkaConnectors.ListConnectorTasks(pipeline.Status.ActiveESConnectorName)
+			newTasks, err := i.KafkaConnectors.ListConnectorTasks(synchronizer.Status.ActiveESConnectorName)
 			Expect(err).ToNot(HaveOccurred())
 			for _, task := range newTasks {
 				Expect(task["state"]).To(Equal("RUNNING"))
 			}
 
 			//validate no refresh occurred
-			Expect(pipeline.Status.ActivePipelineVersion).To(Equal(activePipelineVersion))
+			Expect(synchronizer.Status.ActiveSynchronizerVersion).To(Equal(activeSynchronizerVersion))
 		})
 
 		It("Fails if unable to get connector task status", func() {
 			defer gock.Off()
 
-			pipeline, err := i.CreateValidPipeline()
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 
 			gock.New("http://connect-connect-api.test.svc:8083").
-				Get("/connectors/" + pipeline.Status.ActiveESConnectorName + "/status").
+				Get("/connectors/" + synchronizer.Status.ActiveESConnectorName + "/status").
 				Reply(500)
 
 			err = i.ReconcileValidationWithError()
@@ -1119,7 +1120,7 @@ var _ = Describe("Pipeline operations", func() {
 			err := i.CreateConfigMap("xjoin", cm)
 			Expect(err).ToNot(HaveOccurred())
 
-			pipeline, err := i.CreateValidPipeline()
+			synchronizer, err := i.CreateValidSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
 
 			//give connect time to create the connectors
@@ -1129,21 +1130,21 @@ var _ = Describe("Pipeline operations", func() {
 			defer func(i *Iteration, connectorName string) {
 				err := i.ResumeConnectorReconciliation(connectorName)
 				Expect(err).ToNot(HaveOccurred())
-			}(i, pipeline.Status.ActiveESConnectorName)
-			err = i.PauseConnectorReconciliation(pipeline.Status.ActiveESConnectorName)
+			}(i, synchronizer.Status.ActiveESConnectorName)
+			err = i.PauseConnectorReconciliation(synchronizer.Status.ActiveESConnectorName)
 			Expect(err).ToNot(HaveOccurred())
 
 			//update es connector config with invalid url
 			err = i.SetESConnectorURL(
 				"http://"+serviceName+":9200",
-				pipeline.Status.ActiveESConnectorName)
+				synchronizer.Status.ActiveESConnectorName)
 			Expect(err).ToNot(HaveOccurred())
 
 			//give the connector time to realize it can't connect
 			time.Sleep(10 * time.Second)
 
 			//validate task is failed
-			tasks, err := i.KafkaConnectors.ListConnectorTasks(pipeline.Status.ActiveESConnectorName)
+			tasks, err := i.KafkaConnectors.ListConnectorTasks(synchronizer.Status.ActiveESConnectorName)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(tasks)).To(BeNumerically(">", 0))
 			for _, task := range tasks {
@@ -1151,11 +1152,11 @@ var _ = Describe("Pipeline operations", func() {
 			}
 
 			//reconcile
-			pipeline, err = i.ReconcileValidation()
+			synchronizer, err = i.ReconcileValidation()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pipeline.GetState()).To(Equal(xjoin.STATE_NEW))
-			Expect(pipeline.Status.InitialSyncInProgress).To(BeFalse())
-			Expect(pipeline.GetValid()).To(Equal(metav1.ConditionUnknown))
+			Expect(synchronizer.GetState()).To(Equal(xjoin.STATE_NEW))
+			Expect(synchronizer.Status.InitialSyncInProgress).To(BeFalse())
+			Expect(synchronizer.GetValid()).To(Equal(metav1.ConditionUnknown))
 		})
 	})
 
@@ -1167,11 +1168,11 @@ var _ = Describe("Pipeline operations", func() {
 			err := i.CreateConfigMap("xjoin", cm)
 			Expect(err).ToNot(HaveOccurred())
 
-			err = i.CreatePipeline()
+			err = i.CreateSynchronizer()
 			Expect(err).ToNot(HaveOccurred())
-			pipeline, err := i.ReconcileXJoinNonTest()
+			synchronizer, err := i.ReconcileXJoinNonTest()
 			Expect(err).ToNot(HaveOccurred())
-			topic, err := i.KafkaTopics.GetTopic(i.KafkaTopics.TopicName(pipeline.Status.PipelineVersion))
+			topic, err := i.KafkaTopics.GetTopic(i.KafkaTopics.TopicName(synchronizer.Status.SynchronizerVersion))
 			Expect(err).ToNot(HaveOccurred())
 			topicStruct := topic.(*unstructured.Unstructured)
 			status := topicStruct.Object["status"].(map[string]interface{})
@@ -1187,10 +1188,10 @@ var _ = Describe("Pipeline operations", func() {
 			err := i.CreateConfigMap("xjoin", cm)
 			Expect(err).ToNot(HaveOccurred())
 			clusterName := "invalid.cluster"
-			pipeline := xjoin.XJoinPipelineSpec{
+			synchronizer := xjoin.XJoinSynchronizerSpec{
 				KafkaCluster: &clusterName,
 			}
-			err = i.CreatePipeline(&pipeline)
+			err = i.CreateSynchronizer(&synchronizer)
 			Expect(err).ToNot(HaveOccurred())
 			err = i.ReconcileXJoinNonTestWithError()
 			Expect(err).To(HaveOccurred())
@@ -1226,7 +1227,7 @@ var _ = Describe("Pipeline operations", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				log.Info("DELETING TOPIC" + version)
-				err = i.KafkaTopics.DeleteTopicByPipelineVersion(version)
+				err = i.KafkaTopics.DeleteTopicBySynchronizerVersion(version)
 				Expect(err).ToNot(HaveOccurred())
 
 				time.Sleep(100 * time.Millisecond)

@@ -1,1 +1,1 @@
-This package contains code related to the XJoinDataSource and XJoinDataSourcePipeline CRDs.
+This package contains code related to the XJoinDataSource and XJoinDataSourceSynchronizer CRDs.

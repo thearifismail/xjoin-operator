@@ -1,10 +1,11 @@
 package metrics
 
 import (
+	"strings"
+
 	"github.com/prometheus/client_golang/prometheus"
 	logger "github.com/redhatinsights/xjoin-operator/controllers/log"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
-	"strings"
 )
 
 var log = logger.NewLogger("metrics")
@@ -47,7 +48,7 @@ var (
 
 	inconsistencyThreshold = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "xjoin_inconsistency_threshold",
-		Help: "The threshold of inconsistency below which the pipeline is considered valid",
+		Help: "The threshold of inconsistency below which the synchronizer is considered valid",
 	}, []string{})
 
 	validationFailedCount = prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -57,7 +58,7 @@ var (
 
 	refreshCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "xjoin_refresh_total",
-		Help: "The number of times this pipeline has been refreshed",
+		Help: "The number of times this synchronizer has been refreshed",
 	}, []string{"reason"})
 
 	connectorTaskRestartCount = prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -79,8 +80,8 @@ var (
 type RefreshReason string
 
 const (
-	RefreshInvalidPipeline RefreshReason = "invalid"
-	RefreshStateDeviation  RefreshReason = "deviation"
+	RefreshInvalidSynchronizer RefreshReason = "invalid"
+	RefreshStateDeviation      RefreshReason = "deviation"
 )
 
 func Init() {
@@ -110,7 +111,7 @@ func InitLabels() {
 	fullInconsistencyRatio.WithLabelValues()
 	fullInconsistencyAbsolute.WithLabelValues()
 	validationFailedCount.WithLabelValues()
-	refreshCount.WithLabelValues(string(RefreshInvalidPipeline))
+	refreshCount.WithLabelValues(string(RefreshInvalidSynchronizer))
 	refreshCount.WithLabelValues(string(RefreshStateDeviation))
 	connectRestartCount.WithLabelValues()
 }
@@ -133,7 +134,7 @@ func ConnectorTaskRestarted(connector string) {
 	connectorTaskRestartCount.With(prometheus.Labels{"connector": connector}).Inc()
 }
 
-func PipelineRefreshed(reason RefreshReason) {
+func SynchronizerRefreshed(reason RefreshReason) {
 	refreshCount.WithLabelValues(string(reason)).Inc()
 }
 

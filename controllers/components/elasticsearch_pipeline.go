@@ -3,87 +3,88 @@ package components
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/go-errors/errors"
 	"github.com/redhatinsights/xjoin-operator/controllers/elasticsearch"
-	"strings"
 )
 
-type ElasticsearchPipeline struct {
+type ElasticsearchSynchronizer struct {
 	name                 string
 	version              string
 	JsonFields           []string
 	GenericElasticsearch elasticsearch.GenericElasticsearch
 }
 
-func (es *ElasticsearchPipeline) SetName(name string) {
+func (es *ElasticsearchSynchronizer) SetName(name string) {
 	es.name = strings.ToLower(name)
 }
 
-func (es *ElasticsearchPipeline) SetVersion(version string) {
+func (es *ElasticsearchSynchronizer) SetVersion(version string) {
 	es.version = version
 }
 
-func (es ElasticsearchPipeline) Name() string {
+func (es ElasticsearchSynchronizer) Name() string {
 	return es.name + "." + es.version
 }
 
-func (es ElasticsearchPipeline) Create() (err error) {
-	pipeline, err := es.jsonFieldsToESPipeline()
+func (es ElasticsearchSynchronizer) Create() (err error) {
+	synchronizer, err := es.jsonFieldsToESSynchronizer()
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
-	err = es.GenericElasticsearch.CreatePipeline(es.Name(), pipeline)
-	if err != nil {
-		return errors.Wrap(err, 0)
-	}
-	return
-}
-
-func (es ElasticsearchPipeline) Delete() (err error) {
-	err = es.GenericElasticsearch.DeletePipeline(es.Name())
+	err = es.GenericElasticsearch.CreateSynchronizer(es.Name(), synchronizer)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
 	return
 }
 
-func (es *ElasticsearchPipeline) CheckDeviation() (err error) {
+func (es ElasticsearchSynchronizer) Delete() (err error) {
+	err = es.GenericElasticsearch.DeleteSynchronizer(es.Name())
+	if err != nil {
+		return errors.Wrap(err, 0)
+	}
 	return
 }
 
-func (es ElasticsearchPipeline) Exists() (exists bool, err error) {
-	exists, err = es.GenericElasticsearch.PipelineExists(es.Name())
+func (es *ElasticsearchSynchronizer) CheckDeviation() (err error) {
+	return
+}
+
+func (es ElasticsearchSynchronizer) Exists() (exists bool, err error) {
+	exists, err = es.GenericElasticsearch.SynchronizerExists(es.Name())
 	if err != nil {
 		return false, errors.Wrap(err, 0)
 	}
 	return
 }
 
-func (es ElasticsearchPipeline) ListInstalledVersions() (versions []string, err error) {
-	pipelines, err := es.GenericElasticsearch.ListPipelinesForPrefix(es.name)
+func (es ElasticsearchSynchronizer) ListInstalledVersions() (versions []string, err error) {
+	synchronizers, err := es.GenericElasticsearch.ListSynchronizersForPrefix(es.name)
 	if err != nil {
 		return nil, errors.Wrap(err, 0)
 	}
 
-	for _, pipeline := range pipelines {
-		versions = append(versions, strings.Split(pipeline, es.name+".")[1])
+	for _, synchronizer := range synchronizers {
+		versions = append(versions, strings.Split(synchronizer, es.name+".")[1])
 	}
 	return
 }
 
-func (es ElasticsearchPipeline) jsonFieldsToESPipeline() (pipeline string, err error) {
-	var pipelineObj elasticsearch.Pipeline
-	pipelineObj.Description = "test"
+func (es ElasticsearchSynchronizer) jsonFieldsToESSynchronizer() (synchronizer string, err error) {
+	var synchronizerObj elasticsearch.Synchronizer
+	synchronizerObj.Description = "test"
 	for _, jsonField := range es.JsonFields {
-		var processor elasticsearch.PipelineProcessor
+		var processor elasticsearch.SynchronizerProcessor
 		processor.Json.Field = jsonField
 		processor.Json.If = fmt.Sprintf("ctx.%s != null", jsonField)
-		pipelineObj.Processors = append(pipelineObj.Processors, processor)
+		synchronizerObj.Processors = append(synchronizerObj.Processors, processor)
 	}
 
-	pipelineJson, err := json.Marshal(pipelineObj)
+	synchronizerJson, err := json.Marshal(synchronizerObj)
 	if err != nil {
-		return pipeline, errors.Wrap(err, 0)
+		return synchronizer, errors.Wrap(err, 0)
 	}
-	return string(pipelineJson), nil
+	return string(synchronizerJson), nil
 }

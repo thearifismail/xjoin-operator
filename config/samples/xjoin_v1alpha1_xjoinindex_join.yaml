@@ -11,16 +11,16 @@ spec:
       "name": "advisor.record",
       "fields": [{
         "xjoin.type": "reference",
-        "type": "xjoindatasourcepipeline.advisor.record.Value",
+        "type": "xjoindatasourcesynchronizer.advisor.record.Value",
         "xjoin.joins": [{
           "xjoin.type": "reference",
-          "type": "xjoindatasourcepipeline.host.Value",
+          "type": "xjoindatasourcesynchronizer.host.Value",
           "name": "host",
           "xjoin.parent.key": "host_id",
           "xjoin.key": "id"
         }, {
           "xjoin.type": "reference",
-          "type": "xjoindatasourcepipeline.rule.Value",
+          "type": "xjoindatasourcesynchronizer.rule.Value",
           "name": "rule",
           "xjoin.parent.key": "rule_id",
           "xjoin.key": "id"

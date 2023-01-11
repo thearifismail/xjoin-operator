@@ -20,8 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// XJoinPipelineSpec defines the desired state of XJoinPipeline
-type XJoinPipelineSpec struct {
+// XJoinSynchronizerSpec defines the desired state of XJoinSynchronizer
+type XJoinSynchronizerSpec struct {
 	// +optional
 	// +kubebuilder:validation:MinLength:=3
 	ResourceNamePrefix *string `json:"resourceNamePrefix,omitempty"`
@@ -80,11 +80,11 @@ type XJoinPipelineSpec struct {
 	SchemaRegistrySecretName *string `json:"schemaRegistrySecretName,omitempty"`
 }
 
-// XJoinPipelineStatus defines the observed state of XJoinPipeline
-type XJoinPipelineStatus struct {
+// XJoinSynchronizerStatus defines the observed state of XJoinSynchronizer
+type XJoinSynchronizerStatus struct {
 	// +kubebuilder:validation:Minimum:=0
 	ValidationFailedCount       int                `json:"validationFailedCount"`
-	PipelineVersion             string             `json:"pipelineVersion"`
+	SynchronizerVersion         string             `json:"synchronizerVersion"`
 	XJoinConfigVersion          string             `json:"xjoinConfigVersion"`
 	ElasticSearchSecretVersion  string             `json:"elasticsearchSecretVersion"`
 	HBIDBSecretVersion          string             `json:"hbiDBSecretVersion"`
@@ -92,12 +92,12 @@ type XJoinPipelineStatus struct {
 	Conditions                  []metav1.Condition `json:"conditions"`
 	ActiveIndexName             string             `json:"activeIndexName"`
 	ActiveESConnectorName       string             `json:"activeESConnectorName"`
-	ActiveESPipelineName        string             `json:"activeESPipelineName"`
+	ActiveESSynchronizerName    string             `json:"activeESSynchronizerName"`
 	ActiveDebeziumConnectorName string             `json:"activeDebeziumConnectorName"`
 	ActiveAliasName             string             `json:"activeAliasName"`
 	ActiveTopicName             string             `json:"activeTopicName"`
 	ActiveReplicationSlotName   string             `json:"activeReplicationSlotName"`
-	ActivePipelineVersion       string             `json:"activePipelineVersion"`
+	ActiveSynchronizerVersion   string             `json:"activeSynchronizerVersion"`
 	ElasticSearchSecretName     string             `json:"elasticsearchSecretNameName"`
 	HBIDBSecretName             string             `json:"hbiDBSecretName"`
 }
@@ -106,24 +106,24 @@ type XJoinPipelineStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:shortName=xjoin,categories=all
 
-// XJoinPipeline is the Schema for the xjoinpipelines API
-type XJoinPipeline struct {
+// XJoinSynchronizer is the Schema for the xjoinsynchronizers API
+type XJoinSynchronizer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   XJoinPipelineSpec   `json:"spec,omitempty"`
-	Status XJoinPipelineStatus `json:"status,omitempty"`
+	Spec   XJoinSynchronizerSpec   `json:"spec,omitempty"`
+	Status XJoinSynchronizerStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// XJoinPipelineList contains a list of XJoinPipeline
-type XJoinPipelineList struct {
+// XJoinSynchronizerList contains a list of XJoinSynchronizer
+type XJoinSynchronizerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []XJoinPipeline `json:"items"`
+	Items           []XJoinSynchronizer `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&XJoinPipeline{}, &XJoinPipelineList{})
+	SchemeBuilder.Register(&XJoinSynchronizer{}, &XJoinSynchronizerList{})
 }

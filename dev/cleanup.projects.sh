@@ -12,7 +12,7 @@ done
 echo "Deleting namespaces.."
 kubectl get namespaces -o custom-columns=name:metadata.name | grep xjointest | while read -r namespace ; do
     echo "$namespace"
-    kubectl get XJoinPipeline test-pipeline-01 -o=json -n "$namespace" | jq '.metadata.finalizers = null' | kubectl apply -f -
+    kubectl get XJoinSynchronizer test-synchronizer-01 -o=json -n "$namespace" | jq '.metadata.finalizers = null' | kubectl apply -f -
     
     kubectl delete namespace "$namespace"
 done

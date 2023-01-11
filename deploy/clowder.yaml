@@ -25,9 +25,9 @@ objects:
             node.store.allow_mmap: false
 
   - apiVersion: xjoin.cloud.redhat.com/v1alpha1
-    kind: XJoinPipeline
+    kind: XJoinSynchronizer
     metadata:
-      name: xjoinpipeline
+      name: xjoinsynchronizer
     spec:
       pause: false
       ephemeral: true
@@ -87,7 +87,7 @@ objects:
             "index": {
               "number_of_shards": "{{.ElasticSearchIndexShards}}",
               "number_of_replicas": "{{.ElasticSearchIndexReplicas}}",
-              "default_pipeline": "{{.ElasticSearchPipeline}}",
+              "default_synchronizer": "{{.ElasticSearchSynchronizer}}",
               "max_result_window": 100000
             },
             "analysis": {

@@ -17,7 +17,7 @@
   "retry.backoff.ms": 100,
   "schema.ignore": true,
   "tasks.max": "1",
-  "topics": "xjoinindexpipeline.test-index-pipeline.1234",
+  "topics": "xjoinindexsynchronizer.test-index-synchronizer.1234",
   "transforms.deleteIf.field": "__deleted",
   "transforms.deleteIf.type": "com.redhat.insights.deleteifsmt.DeleteIf$Value",
   "transforms.deleteIf.value": "true",

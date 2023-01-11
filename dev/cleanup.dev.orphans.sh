@@ -1,7 +1,7 @@
 #!/bin/bash
-kubectl get xjoindatasourcepipeline -o custom-columns=name:metadata.name --no-headers | while read -r datasourcepipeline ; do
-  kubectl patch xjoindatasourcepipeline "$datasourcepipeline" -p '{"metadata":{"finalizers":null}}' --type=merge
-  kubectl delete xjoindatasourcepipeline "$datasourcepipeline"
+kubectl get xjoindatasourcesynchronizer -o custom-columns=name:metadata.name --no-headers | while read -r datasourcesynchronizer ; do
+  kubectl patch xjoindatasourcesynchronizer "$datasourcesynchronizer" -p '{"metadata":{"finalizers":null}}' --type=merge
+  kubectl delete xjoindatasourcesynchronizer "$datasourcesynchronizer"
 done
 
 kubectl get xjoindatasource -o custom-columns=name:metadata.name --no-headers | while read -r datasource ; do
@@ -14,9 +14,9 @@ kubectl get xjoinindex -o custom-columns=name:metadata.name --no-headers | while
   kubectl delete xjoinindex "$index"
 done
 
-kubectl get xjoinindexpipeline -o custom-columns=name:metadata.name --no-headers | while read -r indexpipeline ; do
-  kubectl patch xjoinindexpipeline "$indexpipeline" -p '{"metadata":{"finalizers":null}}' --type=merge
-  kubectl delete xjoinindexpipeline "$indexpipeline"
+kubectl get xjoinindexsynchronizer -o custom-columns=name:metadata.name --no-headers | while read -r indexsynchronizer ; do
+  kubectl patch xjoinindexsynchronizer "$indexsynchronizer" -p '{"metadata":{"finalizers":null}}' --type=merge
+  kubectl delete xjoinindexsynchronizer "$indexsynchronizer"
 done
 
 kubectl get xjoinindexvalidator -o custom-columns=name:metadata.name --no-headers | while read -r indexvalidator ; do
@@ -29,18 +29,18 @@ kubectl get deployments -n test -o custom-columns=name:metadata.name --no-header
 done
 
 echo "Deleting connectors.."
-kubectl -n test get KafkaConnector -o custom-columns=name:metadata.name | grep indexpipeline | while read -r connector ; do
+kubectl -n test get KafkaConnector -o custom-columns=name:metadata.name | grep indexsynchronizer | while read -r connector ; do
     kubectl delete KafkaConnector "$connector" -n test
 done
-kubectl -n test get KafkaConnector -o custom-columns=name:metadata.name | grep datasourcepipeline | while read -r connector ; do
+kubectl -n test get KafkaConnector -o custom-columns=name:metadata.name | grep datasourcesynchronizer | while read -r connector ; do
     kubectl delete KafkaConnector "$connector" -n test
 done
 
 echo "Deleting topics.."
-kubectl -n test get KafkaTopic -o custom-columns=name:metadata.name | grep indexpipeline | while read -r topic ; do
+kubectl -n test get KafkaTopic -o custom-columns=name:metadata.name | grep indexsynchronizer | while read -r topic ; do
     kubectl delete KafkaTopic "$topic" -n test
 done
-kubectl -n test get KafkaTopic -o custom-columns=name:metadata.name | grep datasourcepipeline | while read -r topic ; do
+kubectl -n test get KafkaTopic -o custom-columns=name:metadata.name | grep datasourcesynchronizer | while read -r topic ; do
     kubectl delete KafkaTopic "$topic" -n test
 done
 
@@ -88,19 +88,19 @@ done
 
 echo "Deleting ES indexes"
 ES_PASSWORD=$(kubectl get secret/xjoin-elasticsearch-es-elastic-user -o custom-columns=:data.elastic | base64 -d)
-curl -u "elastic:$ES_PASSWORD" http://localhost:9200/_cat/indices\?format\=json | jq '.[] | .index' | grep xjoinindexpipeline | while read -r index ; do
+curl -u "elastic:$ES_PASSWORD" http://localhost:9200/_cat/indices\?format\=json | jq '.[] | .index' | grep xjoinindexsynchronizer | while read -r index ; do
   index="${index:1}"
   index="${index::-1}"
   curl -u "elastic:$ES_PASSWORD" -X DELETE "http://localhost:9200/$index"
 done
 
 echo "Deleting subgraph pods"
-kubectl delete deployments --selector='xjoin.index=xjoinindexpipeline-hosts'
-kubectl delete deployments --selector='xjoin.index=xjoinindexpipeline-cats'
-kubectl delete deployments --selector='xjoin.index=xjoinindexpipeline-cats'
-kubectl delete deployments --selector='xjoin.index=xjoinindexpipeline-hosts-hbi-tags'
+kubectl delete deployments --selector='xjoin.index=xjoinindexsynchronizer-hosts'
+kubectl delete deployments --selector='xjoin.index=xjoinindexsynchronizer-cats'
+kubectl delete deployments --selector='xjoin.index=xjoinindexsynchronizer-cats'
+kubectl delete deployments --selector='xjoin.index=xjoinindexsynchronizer-hosts-hbi-tags'
 
-kubectl delete services --selector='xjoin.index=xjoinindexpipeline-hosts'
-kubectl delete services --selector='xjoin.index=xjoinindexpipeline-cats'
-kubectl delete services --selector='xjoin.index=xjoinindexpipeline-cats'
-kubectl delete services --selector='xjoin.index=xjoinindexpipeline-hosts-hbi-tags'
+kubectl delete services --selector='xjoin.index=xjoinindexsynchronizer-hosts'
+kubectl delete services --selector='xjoin.index=xjoinindexsynchronizer-cats'
+kubectl delete services --selector='xjoin.index=xjoinindexsynchronizer-cats'
+kubectl delete services --selector='xjoin.index=xjoinindexsynchronizer-hosts-hbi-tags'

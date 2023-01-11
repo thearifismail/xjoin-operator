@@ -44,7 +44,7 @@ type Parameters struct {
 	ElasticSearchSecretName              Parameter
 	ElasticSearchNamespace               Parameter
 	ElasticSearchSecretVersion           Parameter
-	ElasticSearchPipelineTemplate        Parameter
+	ElasticSearchSynchronizerTemplate    Parameter
 	ElasticSearchIndexReplicas           Parameter
 	ElasticSearchIndexShards             Parameter
 	ElasticSearchIndexTemplate           Parameter
@@ -211,7 +211,7 @@ func NewXJoinConfiguration() Parameters {
 					"index": {
 					  "number_of_shards": "{{.ElasticSearchIndexShards}}",
 					  "number_of_replicas": "{{.ElasticSearchIndexReplicas}}",
-					  "default_pipeline": "{{.ElasticSearchPipeline}}",
+					  "default_synchronizer": "{{.ElasticSearchSynchronizer}}",
 					  "max_result_window": 100000
 					},
 					"analysis": {
@@ -454,11 +454,11 @@ func NewXJoinConfiguration() Parameters {
 			ConfigMapKey: "elasticsearch.connector.linger.ms",
 			DefaultValue: 100,
 		},
-		ElasticSearchPipelineTemplate: Parameter{
+		ElasticSearchSynchronizerTemplate: Parameter{
 			Type:         reflect.String,
-			ConfigMapKey: "elasticsearch.pipeline.template",
+			ConfigMapKey: "elasticsearch.synchronizer.template",
 			DefaultValue: `{
-				"description" : "Ingest pipeline for {{.ResourceNamePrefix}}",
+				"description" : "Ingest synchronizer for {{.ResourceNamePrefix}}",
 				"processors" : [{
 					"set": {
 						"field": "ingest_timestamp",

@@ -1,1 +1,1 @@
-This package contains code related to the legacy XJoinPipeline CRD.
+This package contains code related to the legacy XJoinSynchronizer CRD.

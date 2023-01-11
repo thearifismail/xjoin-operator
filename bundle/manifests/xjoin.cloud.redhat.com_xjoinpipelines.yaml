@@ -4,24 +4,24 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: xjoinpipelines.xjoin.cloud.redhat.com
+  name: xjoinsynchronizers.xjoin.cloud.redhat.com
 spec:
   group: xjoin.cloud.redhat.com
   names:
     categories:
     - all
-    kind: XJoinPipeline
-    listKind: XJoinPipelineList
-    plural: xjoinpipelines
+    kind: XJoinSynchronizer
+    listKind: XJoinSynchronizerList
+    plural: xjoinsynchronizers
     shortNames:
     - xjoin
-    singular: xjoinpipeline
+    singular: xjoinsynchronizer
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: XJoinPipeline is the Schema for the xjoinpipelines API
+        description: XJoinSynchronizer is the Schema for the xjoinsynchronizers API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -36,7 +36,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: XJoinPipelineSpec defines the desired state of XJoinPipeline
+            description: XJoinSynchronizerSpec defines the desired state of XJoinSynchronizer
             properties:
               connectCluster:
                 minLength: 1
@@ -68,7 +68,7 @@ spec:
                 type: string
             type: object
           status:
-            description: XJoinPipelineStatus defines the observed state of XJoinPipeline
+            description: XJoinSynchronizerStatus defines the observed state of XJoinSynchronizer
             properties:
               activeAliasName:
                 type: string
@@ -76,11 +76,11 @@ spec:
                 type: string
               activeESConnectorName:
                 type: string
-              activeESPipelineName:
+              activeESSynchronizerName:
                 type: string
               activeIndexName:
                 type: string
-              activePipelineVersion:
+              activeSynchronizerVersion:
                 type: string
               activeReplicationSlotName:
                 type: string
@@ -165,7 +165,7 @@ spec:
                 type: string
               initialSyncInProgress:
                 type: boolean
-              pipelineVersion:
+              synchronizerVersion:
                 type: string
               validationFailedCount:
                 minimum: 0
@@ -176,9 +176,9 @@ spec:
             - activeAliasName
             - activeDebeziumConnectorName
             - activeESConnectorName
-            - activeESPipelineName
+            - activeESSynchronizerName
             - activeIndexName
-            - activePipelineVersion
+            - activeSynchronizerVersion
             - activeReplicationSlotName
             - activeTopicName
             - conditions
@@ -187,7 +187,7 @@ spec:
             - hbiDBSecretName
             - hbiDBSecretVersion
             - initialSyncInProgress
-            - pipelineVersion
+            - synchronizerVersion
             - validationFailedCount
             - xjoinConfigVersion
             type: object

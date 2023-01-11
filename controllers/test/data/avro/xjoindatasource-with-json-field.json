@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "Value",
-  "namespace": "xjoindatasourcepipeline.testdatasource",
+  "namespace": "xjoindatasourcesynchronizer.testdatasource",
   "fields": [
     {
       "name": "id",

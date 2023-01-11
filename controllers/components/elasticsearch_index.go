@@ -1,9 +1,10 @@
 package components
 
 import (
+	"strings"
+
 	"github.com/go-errors/errors"
 	"github.com/redhatinsights/xjoin-operator/controllers/elasticsearch"
-	"strings"
 )
 
 type ElasticsearchIndex struct {
@@ -12,7 +13,7 @@ type ElasticsearchIndex struct {
 	Template             string
 	Properties           string
 	GenericElasticsearch elasticsearch.GenericElasticsearch
-	WithPipeline         bool
+	WithSynchronizer     bool
 }
 
 func (es *ElasticsearchIndex) SetName(name string) {
@@ -28,7 +29,7 @@ func (es *ElasticsearchIndex) Name() string {
 }
 
 func (es *ElasticsearchIndex) Create() (err error) {
-	err = es.GenericElasticsearch.CreateIndex(es.Name(), es.Template, es.Properties, es.WithPipeline)
+	err = es.GenericElasticsearch.CreateIndex(es.Name(), es.Template, es.Properties, es.WithSynchronizer)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}

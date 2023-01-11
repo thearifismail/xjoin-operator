@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+
 	"github.com/jarcoal/httpmock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -29,7 +30,7 @@ var _ = Describe("XJoinIndex", func() {
 	})
 
 	Context("Reconcile", func() {
-		It("Should create a XJoinIndexPipeline", func() {
+		It("Should create a XJoinIndexSynchronizer", func() {
 			reconciler := IndexTestReconciler{
 				Namespace: namespace,
 				Name:      "test-index",
@@ -37,17 +38,17 @@ var _ = Describe("XJoinIndex", func() {
 			}
 			createdIndex := reconciler.ReconcileNew()
 
-			indexPipelineName := createdIndex.Name + "." + createdIndex.Status.RefreshingVersion
+			indexSynchronizerName := createdIndex.Name + "." + createdIndex.Status.RefreshingVersion
 
-			indexPipelineKey := types.NamespacedName{Name: indexPipelineName, Namespace: namespace}
-			createdIndexPipeline := &v1alpha1.XJoinIndexPipeline{}
-			k8sGet(indexPipelineKey, createdIndexPipeline)
-			Expect(createdIndexPipeline.Name).To(Equal(indexPipelineName))
-			Expect(createdIndexPipeline.Spec.Name).To(Equal(createdIndex.Name))
-			Expect(createdIndexPipeline.Spec.Version).To(Equal(createdIndex.Status.RefreshingVersion))
-			Expect(createdIndexPipeline.Spec.AvroSchema).To(Equal(createdIndex.Spec.AvroSchema))
-			Expect(createdIndexPipeline.Spec.Pause).To(Equal(createdIndex.Spec.Pause))
-			Expect(createdIndexPipeline.Spec.CustomSubgraphImages).To(Equal(createdIndex.Spec.CustomSubgraphImages))
+			indexSynchronizerKey := types.NamespacedName{Name: indexSynchronizerName, Namespace: namespace}
+			createdIndexSynchronizer := &v1alpha1.XJoinIndexSynchronizer{}
+			k8sGet(indexSynchronizerKey, createdIndexSynchronizer)
+			Expect(createdIndexSynchronizer.Name).To(Equal(indexSynchronizerName))
+			Expect(createdIndexSynchronizer.Spec.Name).To(Equal(createdIndex.Name))
+			Expect(createdIndexSynchronizer.Spec.Version).To(Equal(createdIndex.Status.RefreshingVersion))
+			Expect(createdIndexSynchronizer.Spec.AvroSchema).To(Equal(createdIndex.Spec.AvroSchema))
+			Expect(createdIndexSynchronizer.Spec.Pause).To(Equal(createdIndex.Spec.Pause))
+			Expect(createdIndexSynchronizer.Spec.CustomSubgraphImages).To(Equal(createdIndex.Spec.CustomSubgraphImages))
 
 			controller := true
 			blockOwnerDeletion := true
@@ -59,13 +60,13 @@ var _ = Describe("XJoinIndex", func() {
 				Controller:         &controller,
 				BlockOwnerDeletion: &blockOwnerDeletion,
 			}
-			Expect(createdIndexPipeline.OwnerReferences).To(HaveLen(1))
-			Expect(createdIndexPipeline.OwnerReferences).To(ContainElement(indexOwnerReference))
+			Expect(createdIndexSynchronizer.OwnerReferences).To(HaveLen(1))
+			Expect(createdIndexSynchronizer.OwnerReferences).To(ContainElement(indexOwnerReference))
 		})
 	})
 
 	Context("Reconcile Delete", func() {
-		It("Should delete a XJoinIndexPipeline", func() {
+		It("Should delete a XJoinIndexSynchronizer", func() {
 			reconciler := IndexTestReconciler{
 				Namespace: namespace,
 				Name:      "test-index",
@@ -73,18 +74,18 @@ var _ = Describe("XJoinIndex", func() {
 			}
 			createdIndex := reconciler.ReconcileNew()
 
-			indexPipelineList := &v1alpha1.XJoinIndexPipelineList{}
-			err := k8sClient.List(context.Background(), indexPipelineList, client.InNamespace(namespace))
+			indexSynchronizerList := &v1alpha1.XJoinIndexSynchronizerList{}
+			err := k8sClient.List(context.Background(), indexSynchronizerList, client.InNamespace(namespace))
 			checkError(err)
-			Expect(indexPipelineList.Items).To(HaveLen(1))
+			Expect(indexSynchronizerList.Items).To(HaveLen(1))
 
 			err = k8sClient.Delete(context.Background(), &createdIndex)
 			checkError(err)
 			reconciler.ReconcileDelete()
 
-			err = k8sClient.List(context.Background(), indexPipelineList, client.InNamespace(namespace))
+			err = k8sClient.List(context.Background(), indexSynchronizerList, client.InNamespace(namespace))
 			checkError(err)
-			Expect(indexPipelineList.Items).To(HaveLen(0))
+			Expect(indexSynchronizerList.Items).To(HaveLen(0))
 
 		})
 	})

@@ -6,18 +6,18 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: xjoindatasourcepipelines.xjoin.cloud.redhat.com
+  name: xjoindatasourcesynchronizers.xjoin.cloud.redhat.com
 spec:
   group: xjoin.cloud.redhat.com
   names:
     categories:
     - all
-    kind: XJoinDataSourcePipeline
-    listKind: XJoinDataSourcePipelineList
-    plural: xjoindatasourcepipelines
+    kind: XJoinDataSourceSynchronizer
+    listKind: XJoinDataSourceSynchronizerList
+    plural: xjoindatasourcesynchronizers
     shortNames:
-    - xjoindatasourcepipeline
-    singular: xjoindatasourcepipeline
+    - xjoindatasourcesynchronizer
+    singular: xjoindatasourcesynchronizer
   scope: Namespaced
   versions:
   - name: v1alpha1

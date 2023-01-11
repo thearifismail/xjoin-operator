@@ -18,6 +18,9 @@ package main
 
 import (
 	"flag"
+	"os"
+	"time"
+
 	"github.com/redhatinsights/xjoin-operator/controllers"
 	"github.com/redhatinsights/xjoin-operator/controllers/log"
 	"github.com/redhatinsights/xjoin-operator/controllers/metrics"
@@ -27,11 +30,9 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	k8slog "sigs.k8s.io/controller-runtime/pkg/log"
-	"time"
 
 	xjoinv1alpha1 "github.com/redhatinsights/xjoin-operator/api/v1alpha1"
 	// +kubebuilder:scaffold:imports
@@ -118,15 +119,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = controllers.NewXJoinDataSourcePipelineReconciler(
+	if err = controllers.NewXJoinDataSourceSynchronizerReconciler(
 		mgr.GetClient(),
 		mgr.GetScheme(),
-		ctrl.Log.WithName("controllers").WithName("XJoinDataSourcePipeline"),
-		mgr.GetEventRecorderFor("xjoindatasourcepipeline"),
+		ctrl.Log.WithName("controllers").WithName("XJoinDataSourceSynchronizer"),
+		mgr.GetEventRecorderFor("xjoindatasourcesynchronizer"),
 		namespace,
 		false,
 	).SetupWithManager(mgr); err != nil {
-		k8slog.Log.Error(err, "unable to create controller", "controller", "XJoinDataSourcePipeline")
+		k8slog.Log.Error(err, "unable to create controller", "controller", "XJoinDataSourceSynchronizer")
 		os.Exit(1)
 	}
 
@@ -154,15 +155,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = controllers.NewXJoinIndexPipelineReconciler(
+	if err = controllers.NewXJoinIndexSynchronizerReconciler(
 		mgr.GetClient(),
 		mgr.GetScheme(),
-		ctrl.Log.WithName("controllers").WithName("XJoinIndexPipeline"),
-		mgr.GetEventRecorderFor("xjoinindexpipeline"),
+		ctrl.Log.WithName("controllers").WithName("XJoinIndexSynchronizer"),
+		mgr.GetEventRecorderFor("xjoinindexsynchronizer"),
 		namespace,
 		false,
 	).SetupWithManager(mgr); err != nil {
-		k8slog.Log.Error(err, "unable to create controller", "controller", "XJoinIndexPipeline")
+		k8slog.Log.Error(err, "unable to create controller", "controller", "XJoinIndexSynchronizer")
 		os.Exit(1)
 	}
 
@@ -181,13 +182,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.XJoinPipelineReconciler{
+	if err = (&controllers.XJoinSynchronizerReconciler{
 		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("XJoinPipeline"),
+		Log:      ctrl.Log.WithName("controllers").WithName("XJoinSynchronizer"),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("xjoin"),
 	}).SetupWithManager(mgr); err != nil {
-		k8slog.Log.Error(err, "unable to create controller", "controller", "XJoinPipeline")
+		k8slog.Log.Error(err, "unable to create controller", "controller", "XJoinSynchronizer")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

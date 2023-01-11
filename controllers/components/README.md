@@ -1,4 +1,4 @@
-This package contains the code to manage pipeline components. A component is a piece of the pipeline that needs to be 
+This package contains the code to manage synchronizer components. A component is a piece of the synchronizer that needs to be 
 managed by CRUD operations e.g. a Kafka Connector.
 
 `manager.go` contains the logic to perform the CRUD operations on a set of components.

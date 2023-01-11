@@ -6,18 +6,18 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: xjoinindexpipelines.xjoin.cloud.redhat.com
+  name: xjoinindexsynchronizers.xjoin.cloud.redhat.com
 spec:
   group: xjoin.cloud.redhat.com
   names:
     categories:
     - all
-    kind: XJoinIndexPipeline
-    listKind: XJoinIndexPipelineList
-    plural: xjoinindexpipelines
+    kind: XJoinIndexSynchronizer
+    listKind: XJoinIndexSynchronizerList
+    plural: xjoinindexsynchronizers
     shortNames:
-    - xjoinindexpipeline
-    singular: xjoinindexpipeline
+    - xjoinindexsynchronizer
+    singular: xjoinindexsynchronizer
   scope: Namespaced
   versions:
   - name: v1alpha1

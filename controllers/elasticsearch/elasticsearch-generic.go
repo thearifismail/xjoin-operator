@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/elastic/go-elasticsearch/v7"
-	"github.com/elastic/go-elasticsearch/v7/esapi"
-	"github.com/go-errors/errors"
 	"io/ioutil"
 	"strconv"
 	"strings"
 	"text/template"
+
+	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/go-errors/errors"
 )
 
 type GenericElasticsearch struct {
@@ -115,9 +116,9 @@ func (es GenericElasticsearch) ListIndicesForPrefix(prefix string) ([]string, er
 	return indices, nil
 }
 
-func (es GenericElasticsearch) CreatePipeline(name string, pipeline string) (err error) {
-	res, err := es.Client.Ingest.PutPipeline(
-		name, strings.NewReader(pipeline))
+func (es GenericElasticsearch) CreateSynchronizer(name string, synchronizer string) (err error) {
+	res, err := es.Client.Ingest.PutSynchronizer(
+		name, strings.NewReader(synchronizer))
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
@@ -126,21 +127,21 @@ func (es GenericElasticsearch) CreatePipeline(name string, pipeline string) (err
 	if err != nil {
 		return errors.Wrap(err, 0)
 	} else if statusCode != 200 {
-		return errors.Wrap(errors.New("Invalid status code when creating Elasticsearch Pipeline: "+strconv.Itoa(statusCode)), 0)
+		return errors.Wrap(errors.New("Invalid status code when creating Elasticsearch Synchronizer: "+strconv.Itoa(statusCode)), 0)
 	}
 	return
 }
 
-func (es GenericElasticsearch) DeletePipeline(name string) (err error) {
-	_, err = es.Client.Ingest.DeletePipeline(name)
+func (es GenericElasticsearch) DeleteSynchronizer(name string) (err error) {
+	_, err = es.Client.Ingest.DeleteSynchronizer(name)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
 	return
 }
 
-func (es GenericElasticsearch) PipelineExists(name string) (exists bool, err error) {
-	req := esapi.IngestGetPipelineRequest{
+func (es GenericElasticsearch) SynchronizerExists(name string) (exists bool, err error) {
+	req := esapi.IngestGetSynchronizerRequest{
 		DocumentID: name,
 	}
 
@@ -159,8 +160,8 @@ func (es GenericElasticsearch) PipelineExists(name string) (exists bool, err err
 	}
 }
 
-func (es GenericElasticsearch) ListPipelinesForPrefix(prefix string) (esPipelines []string, err error) {
-	req := esapi.IngestGetPipelineRequest{
+func (es GenericElasticsearch) ListSynchronizersForPrefix(prefix string) (esSynchronizers []string, err error) {
+	req := esapi.IngestGetSynchronizerRequest{
 		DocumentID: prefix + "*",
 	}
 
@@ -171,24 +172,24 @@ func (es GenericElasticsearch) ListPipelinesForPrefix(prefix string) (esPipeline
 	resCode, body, err := parseResponse(res)
 
 	if resCode == 404 {
-		return esPipelines, nil
+		return esSynchronizers, nil
 	} else if resCode != 200 {
 		return nil, errors.Wrap(errors.New(fmt.Sprintf(
-			"Unable to list es pipelines. StatusCode: %s, Body: %s",
+			"Unable to list es synchronizers. StatusCode: %s, Body: %s",
 			strconv.Itoa(res.StatusCode), body)), 0)
 	} else if err != nil {
 		return nil, errors.Wrap(err, 0)
 	}
 
-	for esPipelineName, _ := range body {
-		esPipelines = append(esPipelines, esPipelineName)
+	for esSynchronizerName, _ := range body {
+		esSynchronizers = append(esSynchronizers, esSynchronizerName)
 	}
 
 	return
 }
 
 func (es GenericElasticsearch) CreateIndex(
-	indexName string, indexTemplate string, properties string, withPipeline bool) error {
+	indexName string, indexTemplate string, properties string, withSynchronizer bool) error {
 
 	tmpl, err := template.New("indexTemplate").Parse(indexTemplate)
 	if err != nil {
@@ -199,10 +200,10 @@ func (es GenericElasticsearch) CreateIndex(
 	params["ElasticSearchIndex"] = indexName
 	params["ElasticSearchProperties"] = properties
 
-	if withPipeline {
-		params["ElasticSearchPipeline"] = indexName
+	if withSynchronizer {
+		params["ElasticSearchSynchronizer"] = indexName
 	} else {
-		params["ElasticSearchPipeline"] = "_none"
+		params["ElasticSearchSynchronizer"] = "_none"
 	}
 
 	var indexTemplateBuffer bytes.Buffer

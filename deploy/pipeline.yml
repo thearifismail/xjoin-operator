@@ -25,9 +25,9 @@ parameters:
 
 objects:
   - apiVersion: xjoin.cloud.redhat.com/v1alpha1
-    kind: XJoinPipeline
+    kind: XJoinSynchronizer
     metadata:
-      name: xjoinpipeline
+      name: xjoinsynchronizer
     spec:
       validationThreshold: ${{VALIDATION_THRESHOLD}}
       kafkaClusterNamespace: ${{KAFKA_CLUSTER_NAMESPACE}}

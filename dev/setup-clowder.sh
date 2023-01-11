@@ -122,7 +122,7 @@ kubectl apply -f $(curl https://api.github.com/repos/RedHatInsights/clowder/rele
 print_message "Setting up pull secrets"
 dev/setup.sh -s -p test
 
-# operator CRDs, configmap, XJoinPipeline
+# operator CRDs, configmap, XJoinSynchronizer
 print_message "Setting up XJoin operator"
 dev/setup.sh -x -d -p test
 kubectl apply -f dev/xjoin-generic.configmap.yaml -n test

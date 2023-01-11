@@ -1,4 +1,4 @@
-package pipeline
+package synchronizer
 
 import (
 	"errors"
@@ -73,7 +73,7 @@ func (i *ReconcileIteration) countValidation() (isValid bool, mismatchCount int,
 		return
 	}
 
-	esCount, err := i.ESClient.CountIndex(i.ESClient.ESIndexName(i.Instance.Status.PipelineVersion))
+	esCount, err := i.ESClient.CountIndex(i.ESClient.ESIndexName(i.Instance.Status.SynchronizerVersion))
 	if err != nil {
 		return
 	}
@@ -137,7 +137,7 @@ func (i *ReconcileIteration) idValidation() (isValid bool, mismatchCount int, mi
 		return
 	}
 
-	esIds, err := i.ESClient.GetHostIDsByModifiedOn(i.ESClient.ESIndexName(i.Instance.Status.PipelineVersion), startTime, endTime)
+	esIds, err := i.ESClient.GetHostIDsByModifiedOn(i.ESClient.ESIndexName(i.Instance.Status.SynchronizerVersion), startTime, endTime)
 	if err != nil {
 		return
 	}
@@ -165,7 +165,7 @@ func (i *ReconcileIteration) idValidation() (isValid bool, mismatchCount int, mi
 			return
 		}
 
-		esIds, err = i.ESClient.GetHostIDsByIdList(i.ESClient.ESIndexName(i.Instance.Status.PipelineVersion), mismatchedIds)
+		esIds, err = i.ESClient.GetHostIDsByIdList(i.ESClient.ESIndexName(i.Instance.Status.SynchronizerVersion), mismatchedIds)
 		if err != nil {
 			return
 		}
@@ -209,7 +209,7 @@ type idDiff struct {
 
 func (i *ReconcileIteration) validateFullChunkSync(chunk []string) (allIdDiffs []idDiff, err error) {
 	// retrieve hosts from db and es
-	esHosts, err := i.ESClient.GetHostsByIds(i.ESClient.ESIndexName(i.Instance.Status.PipelineVersion), chunk)
+	esHosts, err := i.ESClient.GetHostsByIds(i.ESClient.ESIndexName(i.Instance.Status.SynchronizerVersion), chunk)
 	if err != nil {
 		return
 	}

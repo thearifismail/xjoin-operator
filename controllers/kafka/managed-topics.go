@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-errors/errors"
-	"github.com/google/go-cmp/cmp"
-	"github.com/redhatinsights/xjoin-go-lib/pkg/utils"
-	"golang.org/x/oauth2/clientcredentials"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/go-errors/errors"
+	"github.com/google/go-cmp/cmp"
+	"github.com/redhatinsights/xjoin-go-lib/pkg/utils"
+	"golang.org/x/oauth2/clientcredentials"
 )
 
 const jsonContentType = "application/json"
@@ -32,8 +33,8 @@ func NewManagedTopics(options ManagedTopicsOptions) *ManagedTopics {
 	return &managedTopics
 }
 
-func (t *ManagedTopics) TopicName(pipelineVersion string) string {
-	return fmt.Sprintf(t.Options.ResourceNamePrefix + "." + pipelineVersion + ".public.hosts")
+func (t *ManagedTopics) TopicName(synchronizerVersion string) string {
+	return fmt.Sprintf(t.Options.ResourceNamePrefix + "." + synchronizerVersion + ".public.hosts")
 }
 
 func (t *ManagedTopics) CreateTopicByName(topicName string) error {
@@ -75,12 +76,12 @@ func (t *ManagedTopics) CreateTopicByName(topicName string) error {
 	return nil
 }
 
-func (t *ManagedTopics) CreateTopic(pipelineVersion string, dryRun bool) error {
-	return t.CreateTopicByName(t.TopicName(pipelineVersion))
+func (t *ManagedTopics) CreateTopic(synchronizerVersion string, dryRun bool) error {
+	return t.CreateTopicByName(t.TopicName(synchronizerVersion))
 }
 
-func (t *ManagedTopics) CheckDeviation(pipelineVersion string) (problem error, err error) {
-	topic, err := t.GetTopic(t.TopicName(pipelineVersion))
+func (t *ManagedTopics) CheckDeviation(synchronizerVersion string) (problem error, err error) {
+	topic, err := t.GetTopic(t.TopicName(synchronizerVersion))
 	if err != nil {
 		return nil, errors.Wrap(err, 0)
 	}
@@ -201,8 +202,8 @@ func (t *ManagedTopics) ListTopicNamesForPrefix(prefix string) ([]string, error)
 	return response, nil
 }
 
-func (t *ManagedTopics) DeleteTopicByPipelineVersion(pipelineVersion string) error {
-	err := t.DeleteTopic(t.TopicName(pipelineVersion))
+func (t *ManagedTopics) DeleteTopicBySynchronizerVersion(synchronizerVersion string) error {
+	err := t.DeleteTopic(t.TopicName(synchronizerVersion))
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
@@ -258,8 +259,8 @@ func (t *ManagedTopics) DeleteAllTopics() error {
 	return nil
 }
 
-// ListTopicNamesForPipelineVersion is only used for tests, a stub will do for now
-func (t *ManagedTopics) ListTopicNamesForPipelineVersion(pipelineVersion string) ([]string, error) {
+// ListTopicNamesForSynchronizerVersion is only used for tests, a stub will do for now
+func (t *ManagedTopics) ListTopicNamesForSynchronizerVersion(synchronizerVersion string) ([]string, error) {
 	return nil, nil
 }
 

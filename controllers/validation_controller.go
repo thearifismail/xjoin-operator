@@ -2,11 +2,13 @@ package controllers
 
 import (
 	"context"
+	"time"
+
 	"github.com/go-errors/errors"
 	"github.com/go-logr/logr"
 	xjoin "github.com/redhatinsights/xjoin-operator/api/v1alpha1"
 	logger "github.com/redhatinsights/xjoin-operator/controllers/log"
-	. "github.com/redhatinsights/xjoin-operator/controllers/pipeline"
+	. "github.com/redhatinsights/xjoin-operator/controllers/synchronizer"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -16,19 +18,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"time"
 )
 
 type ValidationReconciler struct {
-	XJoinPipelineReconciler
+	XJoinSynchronizerReconciler
 
-	// if true the Reconciler will check for pipeline state deviation
+	// if true the Reconciler will check for synchronizer state deviation
 	// should always be true except for tests
 	CheckResourceDeviation bool
 }
 
 func (r *ValidationReconciler) setup(reqLogger logger.Log, request ctrl.Request, ctx context.Context) (ReconcileIteration, error) {
-	i, err := r.XJoinPipelineReconciler.setup(reqLogger, request, ctx)
+	i, err := r.XJoinSynchronizerReconciler.setup(reqLogger, request, ctx)
 
 	if err != nil || i.Instance == nil {
 		return i, err
@@ -46,7 +47,7 @@ func (r *ValidationReconciler) setup(reqLogger logger.Log, request ctrl.Request,
 }
 
 func (r *ValidationReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
-	reqLogger := logger.NewLogger("controller_validation", "Pipeline", request.Name, "Namespace", request.Namespace)
+	reqLogger := logger.NewLogger("controller_validation", "Synchronizer", request.Name, "Namespace", request.Namespace)
 	reqLogger.Info("Reconciling Validation")
 
 	i, err := r.setup(reqLogger, request, ctx)
@@ -87,7 +88,7 @@ func (r *ValidationReconciler) Reconcile(ctx context.Context, request ctrl.Reque
 		}
 	}
 
-	reqLogger.Info("Validating XJoinPipeline",
+	reqLogger.Info("Validating XJoinSynchronizer",
 		"LagCompensationSeconds", i.Parameters.ValidationLagCompensationSeconds.Int(),
 		"ValidationPeriodMinutes", i.Parameters.ValidationPeriodMinutes.Int(),
 		"FullValidationEnabled", i.Parameters.FullValidationEnabled.Bool(),
@@ -96,7 +97,7 @@ func (r *ValidationReconciler) Reconcile(ctx context.Context, request ctrl.Reque
 
 	isValid, err := i.Validate()
 	if err != nil {
-		i.Error(err, "Error validating pipeline")
+		i.Error(err, "Error validating synchronizer")
 		return reconcile.Result{}, err
 	}
 
@@ -104,7 +105,7 @@ func (r *ValidationReconciler) Reconcile(ctx context.Context, request ctrl.Reque
 
 	if isValid {
 		if i.Instance.GetState() == xjoin.STATE_INVALID {
-			i.EventNormal("Valid", "Pipeline is valid again")
+			i.EventNormal("Valid", "Synchronizer is valid again")
 		}
 	}
 
@@ -115,14 +116,14 @@ func eventFilterPredicate() predicate.Predicate {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			if e.ObjectOld.GetGeneration() != e.ObjectNew.GetGeneration() {
-				return true // Pipeline definition changed
+				return true // Synchronizer definition changed
 			}
 
-			oldPipeline, ok1 := e.ObjectOld.(*xjoin.XJoinPipeline)
-			newPipeline, ok2 := e.ObjectNew.(*xjoin.XJoinPipeline)
+			oldSynchronizer, ok1 := e.ObjectOld.(*xjoin.XJoinSynchronizer)
+			newSynchronizer, ok2 := e.ObjectNew.(*xjoin.XJoinSynchronizer)
 
-			if ok1 && ok2 && oldPipeline.Status.InitialSyncInProgress == false && newPipeline.Status.InitialSyncInProgress == true {
-				return true // pipeline refresh happened - validate the new pipeline
+			if ok1 && ok2 && oldSynchronizer.Status.InitialSyncInProgress == false && newSynchronizer.Status.InitialSyncInProgress == true {
+				return true // synchronizer refresh happened - validate the new synchronizer
 			}
 
 			return false
@@ -133,7 +134,7 @@ func eventFilterPredicate() predicate.Predicate {
 func (r *ValidationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("xjoin-validation").
-		For(&xjoin.XJoinPipeline{}).
+		For(&xjoin.XJoinSynchronizer{}).
 		WithEventFilter(eventFilterPredicate()).
 		WithLogger(mgr.GetLogger()).
 		WithOptions(controller.Options{
@@ -153,7 +154,7 @@ func NewValidationReconciler(
 	isTest bool) *ValidationReconciler {
 
 	return &ValidationReconciler{
-		XJoinPipelineReconciler: *NewXJoinReconciler(client, scheme, log, recorder, namespace, isTest),
-		CheckResourceDeviation:  checkResourceDeviation,
+		XJoinSynchronizerReconciler: *NewXJoinReconciler(client, scheme, log, recorder, namespace, isTest),
+		CheckResourceDeviation:      checkResourceDeviation,
 	}
 }

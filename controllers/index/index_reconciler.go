@@ -31,7 +31,7 @@ func (d *ReconcileMethods) Removed() (err error) {
 }
 
 func (d *ReconcileMethods) New(version string) (err error) {
-	err = d.iteration.CreateIndexPipeline(d.iteration.GetInstance().Name, version)
+	err = d.iteration.CreateIndexSynchronizer(d.iteration.GetInstance().Name, version)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
@@ -59,7 +59,7 @@ func (d *ReconcileMethods) Valid() (err error) {
 }
 
 func (d *ReconcileMethods) StartRefreshing(version string) (err error) {
-	err = d.iteration.CreateIndexPipeline(d.iteration.GetInstance().Name, version)
+	err = d.iteration.CreateIndexSynchronizer(d.iteration.GetInstance().Name, version)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
@@ -79,7 +79,7 @@ func (d *ReconcileMethods) Refreshing() (err error) {
 }
 
 func (d *ReconcileMethods) RefreshComplete() (err error) {
-	err = d.iteration.DeleteIndexPipeline(d.iteration.GetInstance().Name, d.iteration.GetInstance().Status.ActiveVersion)
+	err = d.iteration.DeleteIndexSynchronizer(d.iteration.GetInstance().Name, d.iteration.GetInstance().Status.ActiveVersion)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
@@ -130,7 +130,7 @@ func (d *ReconcileMethods) Scrub() (err error) {
 
 	custodian := components.NewCustodian(
 		d.gvk.Kind+"."+d.iteration.GetInstance().Name, validVersions)
-	custodian.AddComponent(&components.ElasticsearchPipeline{
+	custodian.AddComponent(&components.ElasticsearchSynchronizer{
 		GenericElasticsearch: *genericElasticsearch,
 	})
 	custodian.AddComponent(&components.ElasticsearchIndex{

@@ -6,11 +6,11 @@ import (
 	"github.com/redhatinsights/xjoin-operator/controllers/parameters"
 )
 
-type XJoinDataSourcePipelineIteration struct {
+type XJoinDataSourceSynchronizerIteration struct {
 	common.Iteration
 	Parameters parameters.DataSourceParameters
 }
 
-func (i XJoinDataSourcePipelineIteration) GetInstance() *v1alpha1.XJoinDataSourcePipeline {
-	return i.Instance.(*v1alpha1.XJoinDataSourcePipeline)
+func (i XJoinDataSourceSynchronizerIteration) GetInstance() *v1alpha1.XJoinDataSourceSynchronizer {
+	return i.Instance.(*v1alpha1.XJoinDataSourceSynchronizer)
 }

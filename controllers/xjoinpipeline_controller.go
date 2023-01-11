@@ -31,7 +31,7 @@ import (
 	"github.com/redhatinsights/xjoin-operator/controllers/kafka"
 	xjoinlogger "github.com/redhatinsights/xjoin-operator/controllers/log"
 	"github.com/redhatinsights/xjoin-operator/controllers/metrics"
-	. "github.com/redhatinsights/xjoin-operator/controllers/pipeline"
+	. "github.com/redhatinsights/xjoin-operator/controllers/synchronizer"
 	k8sUtils "github.com/redhatinsights/xjoin-operator/controllers/utils"
 	v1 "k8s.io/api/core/v1"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
@@ -48,7 +48,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-type XJoinPipelineReconciler struct {
+type XJoinSynchronizerReconciler struct {
 	Client    client.Client
 	Log       logr.Logger
 	Scheme    *runtime.Scheme
@@ -57,11 +57,11 @@ type XJoinPipelineReconciler struct {
 	Test      bool
 }
 
-func (r *XJoinPipelineReconciler) setup(reqLogger xjoinlogger.Log, request ctrl.Request, ctx context.Context) (ReconcileIteration, error) {
+func (r *XJoinSynchronizerReconciler) setup(reqLogger xjoinlogger.Log, request ctrl.Request, ctx context.Context) (ReconcileIteration, error) {
 
 	i := ReconcileIteration{}
 
-	instance, err := k8sUtils.FetchXJoinPipeline(r.Client, request.NamespacedName, ctx)
+	instance, err := k8sUtils.FetchXJoinSynchronizer(r.Client, request.NamespacedName, ctx)
 	if err != nil {
 		if k8errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -104,7 +104,7 @@ func (r *XJoinPipelineReconciler) setup(reqLogger xjoinlogger.Log, request ctrl.
 		i.Parameters.ElasticSearchUsername.String(),
 		i.Parameters.ElasticSearchPassword.String(),
 		i.Parameters.ResourceNamePrefix.String(),
-		i.Parameters.ElasticSearchPipelineTemplate.String(),
+		i.Parameters.ElasticSearchSynchronizerTemplate.String(),
 		i.Parameters.ElasticSearchIndexTemplate.String(),
 		xjoinConfig.ParametersMap)
 
@@ -198,18 +198,18 @@ func (r *XJoinPipelineReconciler) setup(reqLogger xjoinlogger.Log, request ctrl.
 	return i, nil
 }
 
-// +kubebuilder:rbac:groups=xjoin.cloud.redhat.com,resources=xjoinpipelines;xjoinpipelines/status;xjoinpipelines/finalizers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=xjoin.cloud.redhat.com,resources=xjoinsynchronizers;xjoinsynchronizers/status;xjoinsynchronizers/finalizers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kafka.strimzi.io,resources=kafkaconnectors;kafkaconnectors/finalizers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kafka.strimzi.io,resources=kafkatopics;kafkatopics/finalizers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kafka.strimzi.io,resources=kafkaconnects;kafkas,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=configmaps;secrets;pods,verbs=get;list;watch
 // +kubebuilder:rbac:groups=cloud.redhat.com,resources=clowdenvironments,verbs=get;list;watch
 
-func (r *XJoinPipelineReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
+func (r *XJoinSynchronizerReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	var setupErrors []error
 
-	reqLogger := xjoinlogger.NewLogger("controller_xjoinpipeline", "Pipeline", request.Name, "Namespace", request.Namespace)
-	reqLogger.Info("Reconciling XJoinPipeline")
+	reqLogger := xjoinlogger.NewLogger("controller_xjoinsynchronizer", "Synchronizer", request.Name, "Namespace", request.Namespace)
+	reqLogger.Info("Reconciling XJoinSynchronizer")
 
 	i, err := r.setup(reqLogger, request, ctx)
 	defer i.Close()
@@ -224,7 +224,7 @@ func (r *XJoinPipelineReconciler) Reconcile(ctx context.Context, request ctrl.Re
 		return reconcile.Result{}, nil
 	}
 
-	// pause this pipeline. Reconcile loop is skipped until Pause is set to false or nil
+	// pause this synchronizer. Reconcile loop is skipped until Pause is set to false or nil
 	if i.Instance.Spec.Pause == true {
 		return reconcile.Result{}, nil
 	}
@@ -254,11 +254,11 @@ func (r *XJoinPipelineReconciler) Reconcile(ctx context.Context, request ctrl.Re
 			}
 		}
 
-		err = i.DeleteResourceForPipeline(i.Instance.Status.PipelineVersion)
-		err = i.DeleteResourceForPipeline(i.Instance.Status.ActivePipelineVersion)
+		err = i.DeleteResourceForSynchronizer(i.Instance.Status.SynchronizerVersion)
+		err = i.DeleteResourceForSynchronizer(i.Instance.Status.ActiveSynchronizerVersion)
 
 		//allow this to fail in ephemeral envs because
-		//DeleteResourceForPipeline could fail due to Kafka/KafkaConnect already being deleted
+		//DeleteResourceForSynchronizer could fail due to Kafka/KafkaConnect already being deleted
 		if err != nil && !i.Parameters.Ephemeral.Bool() {
 			return reconcile.Result{}, err
 		}
@@ -268,7 +268,7 @@ func (r *XJoinPipelineReconciler) Reconcile(ctx context.Context, request ctrl.Re
 			return reconcile.Result{}, err
 		}
 
-		i.Log.Info("Successfully finalized XJoinPipeline")
+		i.Log.Info("Successfully finalized XJoinSynchronizer")
 		return reconcile.Result{}, nil
 	}
 
@@ -289,38 +289,38 @@ func (r *XJoinPipelineReconciler) Reconcile(ctx context.Context, request ctrl.Re
 		i.Instance.Status.ElasticSearchSecretVersion = i.Parameters.ElasticSearchSecretVersion.String()
 		i.Instance.Status.HBIDBSecretVersion = i.Parameters.HBIDBSecretVersion.String()
 
-		pipelineVersion := fmt.Sprintf("%s", strconv.FormatInt(time.Now().UnixNano(), 10))
-		if err = i.Instance.TransitionToInitialSync(i.Parameters.ResourceNamePrefix.String(), pipelineVersion); err != nil {
+		synchronizerVersion := fmt.Sprintf("%s", strconv.FormatInt(time.Now().UnixNano(), 10))
+		if err = i.Instance.TransitionToInitialSync(i.Parameters.ResourceNamePrefix.String(), synchronizerVersion); err != nil {
 			i.Error(err, "Error transitioning to Initial Sync")
 			return reconcile.Result{}, err
 		}
 		i.ProbeStartingInitialSync()
 
-		err = i.KafkaTopics.CreateTopic(pipelineVersion, false)
+		err = i.KafkaTopics.CreateTopic(synchronizerVersion, false)
 		if err != nil {
 			i.Error(err, "Error creating Kafka topic")
 			return reconcile.Result{}, err
 		}
 
-		err = i.ESClient.CreateESPipeline(pipelineVersion)
+		err = i.ESClient.CreateESSynchronizer(synchronizerVersion)
 		if err != nil {
-			i.Error(err, "Error creating ElasticSearch pipeline")
+			i.Error(err, "Error creating ElasticSearch synchronizer")
 			return reconcile.Result{}, err
 		}
 
-		err = i.ESClient.CreateIndex(pipelineVersion)
+		err = i.ESClient.CreateIndex(synchronizerVersion)
 		if err != nil {
 			i.Error(err, "Error creating ElasticSearch index")
 			return reconcile.Result{}, err
 		}
 
-		_, err = i.KafkaConnectors.CreateDebeziumConnector(pipelineVersion, false)
+		_, err = i.KafkaConnectors.CreateDebeziumConnector(synchronizerVersion, false)
 		if err != nil {
 			i.Error(err, "Error creating debezium connector")
 			return reconcile.Result{}, err
 		}
 
-		_, err = i.KafkaConnectors.CreateESConnector(pipelineVersion, false)
+		_, err = i.KafkaConnectors.CreateESConnector(synchronizerVersion, false)
 		if err != nil {
 			i.Error(err, "Error creating ES connector")
 			return reconcile.Result{}, err
@@ -339,17 +339,17 @@ func (r *XJoinPipelineReconciler) Reconcile(ctx context.Context, request ctrl.Re
 		} else if updated {
 			i.EventNormal(
 				"ValidationSucceeded",
-				"Pipeline became valid. xjoin.inventory.hosts alias now points to %s",
-				i.ESClient.ESIndexName(i.Instance.Status.PipelineVersion))
+				"Synchronizer became valid. xjoin.inventory.hosts alias now points to %s",
+				i.ESClient.ESIndexName(i.Instance.Status.SynchronizerVersion))
 		}
 		return i.UpdateStatusAndRequeue()
 	}
 
-	// invalid pipeline - either STATE_INITIAL_SYNC or STATE_INVALID
+	// invalid synchronizer - either STATE_INITIAL_SYNC or STATE_INVALID
 	if i.Instance.GetValid() == metav1.ConditionFalse {
 		if i.Instance.Status.ValidationFailedCount >= i.GetValidationAttemptsThreshold() {
 
-			// This pipeline never became valid.
+			// This synchronizer never became valid.
 			if i.Instance.GetState() == xjoin.STATE_INITIAL_SYNC {
 				if err = i.UpdateAliasIfHealthier(); err != nil {
 					// if this fails continue and do refresh, keeping the old index active
@@ -358,7 +358,7 @@ func (r *XJoinPipelineReconciler) Reconcile(ctx context.Context, request ctrl.Re
 			}
 
 			i.Instance.TransitionToNew()
-			i.ProbePipelineDidNotBecomeValid()
+			i.ProbeSynchronizerDidNotBecomeValid()
 			return i.UpdateStatusAndRequeue()
 		}
 	}
@@ -366,10 +366,10 @@ func (r *XJoinPipelineReconciler) Reconcile(ctx context.Context, request ctrl.Re
 	return i.UpdateStatusAndRequeue()
 }
 
-func (r *XJoinPipelineReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *XJoinSynchronizerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("xjoin-controller").
-		For(&xjoin.XJoinPipeline{}).
+		For(&xjoin.XJoinSynchronizer{}).
 		Owns(kafka.EmptyConnector()).
 		WithLogger(mgr.GetLogger()).
 		WithOptions(controller.Options{
@@ -387,23 +387,23 @@ func (r *XJoinPipelineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return requests
 			}
 
-			pipelines, err := k8sUtils.FetchXJoinPipelines(r.Client, ctx)
+			synchronizers, err := k8sUtils.FetchXJoinSynchronizers(r.Client, ctx)
 			if err != nil {
-				r.Log.Error(err, "Failed to fetch XJoinPipelines")
+				r.Log.Error(err, "Failed to fetch XJoinSynchronizers")
 				return requests
 			}
 
-			for _, pipeline := range pipelines.Items {
+			for _, synchronizer := range synchronizers.Items {
 				requests = append(requests, reconcile.Request{
 					NamespacedName: types.NamespacedName{
 						Namespace: configMap.GetNamespace(),
-						Name:      pipeline.GetName(),
+						Name:      synchronizer.GetName(),
 					},
 				})
 			}
 
-			r.Log.Info("XJoin ConfigMap changed. Reconciling XJoinPipelines",
-				"namespace", configMap.GetNamespace(), "pipelines", requests)
+			r.Log.Info("XJoin ConfigMap changed. Reconciling XJoinSynchronizers",
+				"namespace", configMap.GetNamespace(), "synchronizers", requests)
 			return requests
 		})).
 		Watches(&source.Kind{Type: &v1.Secret{}}, handler.EnqueueRequestsFromMapFunc(func(secret client.Object) []reconcile.Request {
@@ -418,25 +418,25 @@ func (r *XJoinPipelineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 			secretName := secret.GetName()
 
-			pipelines, err := k8sUtils.FetchXJoinPipelines(r.Client, ctx)
+			synchronizers, err := k8sUtils.FetchXJoinSynchronizers(r.Client, ctx)
 			if err != nil {
-				r.Log.Error(err, "Failed to fetch XJoinPipelines")
+				r.Log.Error(err, "Failed to fetch XJoinSynchronizers")
 				return requests
 			}
 
-			for _, pipeline := range pipelines.Items {
-				if pipeline.Status.HBIDBSecretName == secretName || pipeline.Status.ElasticSearchSecretName == secretName {
+			for _, synchronizer := range synchronizers.Items {
+				if synchronizer.Status.HBIDBSecretName == secretName || synchronizer.Status.ElasticSearchSecretName == secretName {
 					requests = append(requests, reconcile.Request{
 						NamespacedName: types.NamespacedName{
-							Namespace: pipeline.GetNamespace(),
-							Name:      pipeline.GetName(),
+							Namespace: synchronizer.GetNamespace(),
+							Name:      synchronizer.GetName(),
 						},
 					})
 				}
 			}
 
-			r.Log.Info("XJoin secret changed. Reconciling XJoinPipelines",
-				"namespace", secret.GetNamespace(), "name", secret.GetName(), "pipelines", requests)
+			r.Log.Info("XJoin secret changed. Reconciling XJoinSynchronizers",
+				"namespace", secret.GetNamespace(), "name", secret.GetName(), "synchronizers", requests)
 			return requests
 		})).
 		Complete(r)
@@ -448,9 +448,9 @@ func NewXJoinReconciler(
 	log logr.Logger,
 	recorder record.EventRecorder,
 	namespace string,
-	isTest bool) *XJoinPipelineReconciler {
+	isTest bool) *XJoinSynchronizerReconciler {
 
-	return &XJoinPipelineReconciler{
+	return &XJoinSynchronizerReconciler{
 		Client:    client,
 		Log:       log,
 		Scheme:    scheme,

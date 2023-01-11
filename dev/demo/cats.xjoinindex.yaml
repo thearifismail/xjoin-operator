@@ -10,7 +10,7 @@ spec:
       "name": "catsindex",
       "fields": [{
         "type": {
-          "type": "xjoindatasourcepipeline.cats.Value",
+          "type": "xjoindatasourcesynchronizer.cats.Value",
           "xjoin.type": "reference"
         },
         "name": "cat"

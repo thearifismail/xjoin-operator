@@ -1,7 +1,7 @@
 apiVersion: xjoin.cloud.redhat.com/v1alpha1
-kind: XJoinPipeline
+kind: XJoinSynchronizer
 metadata:
-  name: xjoinpipeline-sample
+  name: xjoinsynchronizer-sample
 spec:
   connectCluster: connect
   connectClusterNamespace: test

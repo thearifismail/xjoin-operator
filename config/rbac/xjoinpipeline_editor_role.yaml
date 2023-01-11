@@ -1,13 +1,13 @@
-# permissions for end users to edit xjoinpipelines.
+# permissions for end users to edit xjoinsynchronizers.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: xjoinpipeline-editor-role
+  name: xjoinsynchronizer-editor-role
 rules:
 - apiGroups:
   - xjoin.cloud.redhat.com
   resources:
-  - xjoinpipelines
+  - xjoinsynchronizers
   verbs:
   - create
   - delete
@@ -19,6 +19,6 @@ rules:
 - apiGroups:
   - xjoin.cloud.redhat.com
   resources:
-  - xjoinpipelines/status
+  - xjoinsynchronizers/status
   verbs:
   - get

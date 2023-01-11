@@ -145,7 +145,7 @@ func (i *IndexTestReconciler) registerNewMocks() {
 
 	httpmock.RegisterResponder(
 		"GET",
-		"http://localhost:9200/_ingest/pipeline/xjoinindex."+i.Name+"%2A",
+		"http://localhost:9200/_ingest/synchronizer/xjoinindex."+i.Name+"%2A",
 		httpmock.NewStringResponder(404, "{}"))
 
 	httpmock.RegisterResponder(

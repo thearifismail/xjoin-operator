@@ -13,7 +13,7 @@ function usage() {
 
   printf "%-25s %s\n" "-a, --all" "setup everything"
   printf "%-25s %s\n" "-e, --elasticsearch" "setup Elasticsearch"
-  printf "%-25s %s\n" "-x, --xjoin-operator" "install the xjoin operator CRDs, xjoin configmap, and create a XJoinPipeline"
+  printf "%-25s %s\n" "-x, --xjoin-operator" "install the xjoin operator CRDs, xjoin configmap, and create a XJoinSynchronizer"
   printf "%-25s %s\n" "-s, --secret" "create a secret using the local machine's .docker/config.json"
 }
 

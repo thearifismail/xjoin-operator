@@ -2,28 +2,29 @@ package v1alpha1
 
 import (
 	"fmt"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type PipelineState string
+type SynchronizerState string
 
 const validConditionType = "Valid"
 
 const (
-	STATE_NEW          PipelineState = "NEW"
-	STATE_INITIAL_SYNC PipelineState = "INITIAL_SYNC"
-	STATE_VALID        PipelineState = "VALID"
-	STATE_INVALID      PipelineState = "INVALID"
-	STATE_REMOVED      PipelineState = "REMOVED"
-	STATE_UNKNOWN      PipelineState = "UNKNOWN"
+	STATE_NEW          SynchronizerState = "NEW"
+	STATE_INITIAL_SYNC SynchronizerState = "INITIAL_SYNC"
+	STATE_VALID        SynchronizerState = "VALID"
+	STATE_INVALID      SynchronizerState = "INVALID"
+	STATE_REMOVED      SynchronizerState = "REMOVED"
+	STATE_UNKNOWN      SynchronizerState = "UNKNOWN"
 )
 
-func (instance *XJoinPipeline) GetState() PipelineState {
+func (instance *XJoinSynchronizer) GetState() SynchronizerState {
 	switch {
 	case instance.GetDeletionTimestamp() != nil:
 		return STATE_REMOVED
-	case instance.Status.PipelineVersion == "":
+	case instance.Status.SynchronizerVersion == "":
 		return STATE_NEW
 	case instance.IsValid():
 		return STATE_VALID
@@ -36,7 +37,7 @@ func (instance *XJoinPipeline) GetState() PipelineState {
 	}
 }
 
-func (instance *XJoinPipeline) SetValid(status metav1.ConditionStatus, reason string, message string) {
+func (instance *XJoinSynchronizer) SetValid(status metav1.ConditionStatus, reason string, message string) {
 	meta.SetStatusCondition(&instance.Status.Conditions, metav1.Condition{
 		Type:    validConditionType,
 		Status:  status,
@@ -55,15 +56,15 @@ func (instance *XJoinPipeline) SetValid(status metav1.ConditionStatus, reason st
 	}
 }
 
-func (instance *XJoinPipeline) ResetValid() {
+func (instance *XJoinSynchronizer) ResetValid() {
 	instance.SetValid(metav1.ConditionUnknown, "New", "Validation not yet run")
 }
 
-func (instance *XJoinPipeline) IsValid() bool {
+func (instance *XJoinSynchronizer) IsValid() bool {
 	return meta.IsStatusConditionPresentAndEqual(instance.Status.Conditions, validConditionType, metav1.ConditionTrue)
 }
 
-func (instance *XJoinPipeline) GetValid() metav1.ConditionStatus {
+func (instance *XJoinSynchronizer) GetValid() metav1.ConditionStatus {
 	condition := meta.FindStatusCondition(instance.Status.Conditions, validConditionType)
 
 	if condition == nil {
@@ -73,25 +74,25 @@ func (instance *XJoinPipeline) GetValid() metav1.ConditionStatus {
 	return condition.Status
 }
 
-func (instance *XJoinPipeline) TransitionToInitialSync(resourceNamePrefix string, pipelineVersion string) error {
+func (instance *XJoinSynchronizer) TransitionToInitialSync(resourceNamePrefix string, synchronizerVersion string) error {
 	if err := instance.assertState(STATE_INITIAL_SYNC, STATE_INITIAL_SYNC, STATE_NEW); err != nil {
 		return err
 	}
 
 	instance.ResetValid()
 	instance.Status.InitialSyncInProgress = true
-	instance.Status.PipelineVersion = pipelineVersion
+	instance.Status.SynchronizerVersion = synchronizerVersion
 
 	return nil
 }
 
-func (instance *XJoinPipeline) TransitionToNew() {
+func (instance *XJoinSynchronizer) TransitionToNew() {
 	instance.ResetValid()
 	instance.Status.InitialSyncInProgress = false
-	instance.Status.PipelineVersion = ""
+	instance.Status.SynchronizerVersion = ""
 }
 
-func (instance *XJoinPipeline) assertState(targetState PipelineState, validStates ...PipelineState) error {
+func (instance *XJoinSynchronizer) assertState(targetState SynchronizerState, validStates ...SynchronizerState) error {
 	for _, state := range validStates {
 		if instance.GetState() == state {
 			return nil

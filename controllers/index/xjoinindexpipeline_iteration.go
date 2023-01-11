@@ -6,11 +6,11 @@ import (
 	"github.com/redhatinsights/xjoin-operator/controllers/parameters"
 )
 
-type XJoinIndexPipelineIteration struct {
+type XJoinIndexSynchronizerIteration struct {
 	common.Iteration
 	Parameters parameters.IndexParameters
 }
 
-func (i XJoinIndexPipelineIteration) GetInstance() *v1alpha1.XJoinIndexPipeline {
-	return i.Instance.(*v1alpha1.XJoinIndexPipeline)
+func (i XJoinIndexSynchronizerIteration) GetInstance() *v1alpha1.XJoinIndexSynchronizer {
+	return i.Instance.(*v1alpha1.XJoinIndexSynchronizer)
 }

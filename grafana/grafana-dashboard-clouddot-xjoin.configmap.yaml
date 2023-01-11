@@ -32,7 +32,7 @@ data:
           },
           "id": 12,
           "panels": [],
-          "title": "Pipeline",
+          "title": "Synchronizer",
           "type": "row"
         },
         {

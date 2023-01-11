@@ -15,9 +15,9 @@ type XJoinIndexIteration struct {
 	Parameters parameters.IndexParameters
 }
 
-func (i *XJoinIndexIteration) CreateIndexPipeline(name string, version string) (err error) {
-	indexPipeline := unstructured.Unstructured{}
-	indexPipeline.Object = map[string]interface{}{
+func (i *XJoinIndexIteration) CreateIndexSynchronizer(name string, version string) (err error) {
+	indexSynchronizer := unstructured.Unstructured{}
+	indexSynchronizer.Object = map[string]interface{}{
 		"metadata": map[string]interface{}{
 			"name":      name + "." + version,
 			"namespace": i.Iteration.Instance.GetNamespace(),
@@ -33,9 +33,9 @@ func (i *XJoinIndexIteration) CreateIndexPipeline(name string, version string) (
 			"customSubgraphImages": i.Parameters.CustomSubgraphImages.Value(),
 		},
 	}
-	indexPipeline.SetGroupVersionKind(common.IndexPipelineGVK)
+	indexSynchronizer.SetGroupVersionKind(common.IndexSynchronizerGVK)
 
-	err = i.CreateChildResource(indexPipeline, common.IndexGVK)
+	err = i.CreateChildResource(indexSynchronizer, common.IndexGVK)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
@@ -68,8 +68,8 @@ func (i *XJoinIndexIteration) CreateIndexValidator(name string, version string) 
 	return
 }
 
-func (i *XJoinIndexIteration) DeleteIndexPipeline(name string, version string) (err error) {
-	err = i.DeleteResource(name+"."+version, common.IndexPipelineGVK)
+func (i *XJoinIndexIteration) DeleteIndexSynchronizer(name string, version string) (err error) {
+	err = i.DeleteResource(name+"."+version, common.IndexSynchronizerGVK)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
@@ -95,7 +95,7 @@ func (i XJoinIndexIteration) GetFinalizerName() string {
 func (i *XJoinIndexIteration) Finalize() (err error) {
 	i.Log.Info("Starting finalizer")
 
-	err = i.DeleteAllResourceTypeWithComponentName(common.IndexPipelineGVK, i.GetInstance().GetName())
+	err = i.DeleteAllResourceTypeWithComponentName(common.IndexSynchronizerGVK, i.GetInstance().GetName())
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
@@ -118,8 +118,8 @@ func (i *XJoinIndexIteration) Finalize() (err error) {
 	return nil
 }
 
-func (i *XJoinIndexIteration) ReconcilePipeline() (err error) {
-	child := NewIndexPipelineChild(i)
+func (i *XJoinIndexIteration) ReconcileSynchronizer() (err error) {
+	child := NewIndexSynchronizerChild(i)
 	err = i.ReconcileChild(child)
 	if err != nil {
 		return errors.Wrap(err, 0)
@@ -137,7 +137,7 @@ func (i *XJoinIndexIteration) ReconcileValidator() (err error) {
 }
 
 func (i *XJoinIndexIteration) ReconcileChildren() (err error) {
-	err = i.ReconcilePipeline()
+	err = i.ReconcileSynchronizer()
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}

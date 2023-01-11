@@ -30,7 +30,7 @@ var _ = Describe("XJoinDataSource", func() {
 	})
 
 	Context("Reconcile", func() {
-		It("Should create a XJoinDataSourcePipeline", func() {
+		It("Should create a XJoinDataSourceSynchronizer", func() {
 			reconciler := DatasourceTestReconciler{
 				Namespace: namespace,
 				Name:      "test-data-source",
@@ -38,22 +38,22 @@ var _ = Describe("XJoinDataSource", func() {
 			}
 			createdDataSource := reconciler.ReconcileNew()
 
-			dataSourcePipelineName := createdDataSource.Name + "." + createdDataSource.Status.RefreshingVersion
-			datasourcePipelineKey := types.NamespacedName{Name: dataSourcePipelineName, Namespace: namespace}
-			createdDatasourcePipeline := &v1alpha1.XJoinDataSourcePipeline{}
-			k8sGet(datasourcePipelineKey, createdDatasourcePipeline)
+			dataSourceSynchronizerName := createdDataSource.Name + "." + createdDataSource.Status.RefreshingVersion
+			datasourceSynchronizerKey := types.NamespacedName{Name: dataSourceSynchronizerName, Namespace: namespace}
+			createdDatasourceSynchronizer := &v1alpha1.XJoinDataSourceSynchronizer{}
+			k8sGet(datasourceSynchronizerKey, createdDatasourceSynchronizer)
 
-			Expect(createdDatasourcePipeline.Name).To(Equal(dataSourcePipelineName))
-			Expect(createdDatasourcePipeline.Spec.Name).To(Equal(createdDataSource.Name))
-			Expect(createdDatasourcePipeline.Spec.Version).To(Equal(createdDataSource.Status.RefreshingVersion))
-			Expect(createdDatasourcePipeline.Spec.AvroSchema).To(Equal(createdDataSource.Spec.AvroSchema))
-			Expect(createdDatasourcePipeline.Spec.DatabaseHostname).To(Equal(createdDataSource.Spec.DatabaseHostname))
-			Expect(createdDatasourcePipeline.Spec.DatabasePort).To(Equal(createdDataSource.Spec.DatabasePort))
-			Expect(createdDatasourcePipeline.Spec.DatabaseUsername).To(Equal(createdDataSource.Spec.DatabaseUsername))
-			Expect(createdDatasourcePipeline.Spec.DatabasePassword).To(Equal(createdDataSource.Spec.DatabasePassword))
-			Expect(createdDatasourcePipeline.Spec.DatabaseName).To(Equal(createdDataSource.Spec.DatabaseName))
-			Expect(createdDatasourcePipeline.Spec.DatabaseTable).To(Equal(createdDataSource.Spec.DatabaseTable))
-			Expect(createdDatasourcePipeline.Spec.Pause).To(Equal(createdDataSource.Spec.Pause))
+			Expect(createdDatasourceSynchronizer.Name).To(Equal(dataSourceSynchronizerName))
+			Expect(createdDatasourceSynchronizer.Spec.Name).To(Equal(createdDataSource.Name))
+			Expect(createdDatasourceSynchronizer.Spec.Version).To(Equal(createdDataSource.Status.RefreshingVersion))
+			Expect(createdDatasourceSynchronizer.Spec.AvroSchema).To(Equal(createdDataSource.Spec.AvroSchema))
+			Expect(createdDatasourceSynchronizer.Spec.DatabaseHostname).To(Equal(createdDataSource.Spec.DatabaseHostname))
+			Expect(createdDatasourceSynchronizer.Spec.DatabasePort).To(Equal(createdDataSource.Spec.DatabasePort))
+			Expect(createdDatasourceSynchronizer.Spec.DatabaseUsername).To(Equal(createdDataSource.Spec.DatabaseUsername))
+			Expect(createdDatasourceSynchronizer.Spec.DatabasePassword).To(Equal(createdDataSource.Spec.DatabasePassword))
+			Expect(createdDatasourceSynchronizer.Spec.DatabaseName).To(Equal(createdDataSource.Spec.DatabaseName))
+			Expect(createdDatasourceSynchronizer.Spec.DatabaseTable).To(Equal(createdDataSource.Spec.DatabaseTable))
+			Expect(createdDatasourceSynchronizer.Spec.Pause).To(Equal(createdDataSource.Spec.Pause))
 
 			controller := true
 			blockOwnerDeletion := true
@@ -65,13 +65,13 @@ var _ = Describe("XJoinDataSource", func() {
 				Controller:         &controller,
 				BlockOwnerDeletion: &blockOwnerDeletion,
 			}
-			Expect(createdDatasourcePipeline.OwnerReferences).To(HaveLen(1))
-			Expect(createdDatasourcePipeline.OwnerReferences).To(ContainElement(dataSourceOwnerReference))
+			Expect(createdDatasourceSynchronizer.OwnerReferences).To(HaveLen(1))
+			Expect(createdDatasourceSynchronizer.OwnerReferences).To(ContainElement(dataSourceOwnerReference))
 		})
 	})
 
 	Context("Reconcile Delete", func() {
-		It("Should delete a XJoinDataSourcePipeline", func() {
+		It("Should delete a XJoinDataSourceSynchronizer", func() {
 			reconciler := DatasourceTestReconciler{
 				Namespace: namespace,
 				Name:      "test-data-source",
@@ -79,18 +79,18 @@ var _ = Describe("XJoinDataSource", func() {
 			}
 			createdDataSource := reconciler.ReconcileNew()
 
-			dataSourcePipelineList := &v1alpha1.XJoinDataSourcePipelineList{}
-			err := k8sClient.List(context.Background(), dataSourcePipelineList, client.InNamespace(namespace))
+			dataSourceSynchronizerList := &v1alpha1.XJoinDataSourceSynchronizerList{}
+			err := k8sClient.List(context.Background(), dataSourceSynchronizerList, client.InNamespace(namespace))
 			checkError(err)
-			Expect(dataSourcePipelineList.Items).To(HaveLen(1))
+			Expect(dataSourceSynchronizerList.Items).To(HaveLen(1))
 
 			err = k8sClient.Delete(context.Background(), &createdDataSource)
 			checkError(err)
 			reconciler.ReconcileDelete()
 
-			err = k8sClient.List(context.Background(), dataSourcePipelineList, client.InNamespace(namespace))
+			err = k8sClient.List(context.Background(), dataSourceSynchronizerList, client.InNamespace(namespace))
 			checkError(err)
-			Expect(dataSourcePipelineList.Items).To(HaveLen(0))
+			Expect(dataSourceSynchronizerList.Items).To(HaveLen(0))
 		})
 	})
 })

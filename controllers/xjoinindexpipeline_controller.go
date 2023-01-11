@@ -33,9 +33,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const xjoinindexpipelineFinalizer = "finalizer.xjoin.indexpipeline.cloud.redhat.com"
+const xjoinindexsynchronizerFinalizer = "finalizer.xjoin.indexsynchronizer.cloud.redhat.com"
 
-type XJoinIndexPipelineReconciler struct {
+type XJoinIndexSynchronizerReconciler struct {
 	Client    client.Client
 	Log       logr.Logger
 	Scheme    *runtime.Scheme
@@ -44,15 +44,15 @@ type XJoinIndexPipelineReconciler struct {
 	Test      bool
 }
 
-func NewXJoinIndexPipelineReconciler(
+func NewXJoinIndexSynchronizerReconciler(
 	client client.Client,
 	scheme *runtime.Scheme,
 	log logr.Logger,
 	recorder record.EventRecorder,
 	namespace string,
-	isTest bool) *XJoinIndexPipelineReconciler {
+	isTest bool) *XJoinIndexSynchronizerReconciler {
 
-	return &XJoinIndexPipelineReconciler{
+	return &XJoinIndexSynchronizerReconciler{
 		Client:    client,
 		Log:       log,
 		Scheme:    scheme,
@@ -62,10 +62,10 @@ func NewXJoinIndexPipelineReconciler(
 	}
 }
 
-func (r *XJoinIndexPipelineReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *XJoinIndexSynchronizerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		Named("xjoin-indexpipeline-controller").
-		For(&xjoin.XJoinIndexPipeline{}).
+		Named("xjoin-indexsynchronizer-controller").
+		For(&xjoin.XJoinIndexSynchronizer{}).
 		WithLogger(mgr.GetLogger()).
 		WithOptions(controller.Options{
 			Log:         mgr.GetLogger(),
@@ -74,7 +74,7 @@ func (r *XJoinIndexPipelineReconciler) SetupWithManager(mgr ctrl.Manager) error 
 		Complete(r)
 }
 
-// +kubebuilder:rbac:groups=xjoin.cloud.redhat.com,resources=xjoinindexpipelines;xjoinindexpipelines/status;xjoinindexpipelines/finalizers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=xjoin.cloud.redhat.com,resources=xjoinindexsynchronizers;xjoinindexsynchronizers/status;xjoinindexsynchronizers/finalizers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kafka.strimzi.io,resources=kafkaconnectors;kafkaconnectors/finalizers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kafka.strimzi.io,resources=kafkatopics;kafkatopics/finalizers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kafka.strimzi.io,resources=kafkaconnects;kafkas,verbs=get;list;watch
@@ -82,11 +82,11 @@ func (r *XJoinIndexPipelineReconciler) SetupWithManager(mgr ctrl.Manager) error 
 // +kubebuilder:rbac:groups="",resources=services;events,verbs=get;list;watch;create;delete;update
 // +kubebuilder:rbac:groups="apps",resources=deployments,verbs=get;list;watch;create;delete;update
 
-func (r *XJoinIndexPipelineReconciler) Reconcile(ctx context.Context, request ctrl.Request) (result ctrl.Result, err error) {
-	reqLogger := xjoinlogger.NewLogger("controller_xjoinindexpipeline", "IndexPipeline", request.Name, "Namespace", request.Namespace)
-	reqLogger.Info("Reconciling XJoinIndexPipeline")
+func (r *XJoinIndexSynchronizerReconciler) Reconcile(ctx context.Context, request ctrl.Request) (result ctrl.Result, err error) {
+	reqLogger := xjoinlogger.NewLogger("controller_xjoinindexsynchronizer", "IndexSynchronizer", request.Name, "Namespace", request.Namespace)
+	reqLogger.Info("Reconciling XJoinIndexSynchronizer")
 
-	instance, err := k8sUtils.FetchXJoinIndexPipeline(r.Client, request.NamespacedName, ctx)
+	instance, err := k8sUtils.FetchXJoinIndexSynchronizer(r.Client, request.NamespacedName, ctx)
 	if err != nil {
 		if k8errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -100,9 +100,9 @@ func (r *XJoinIndexPipelineReconciler) Reconcile(ctx context.Context, request ct
 
 	if len(instance.OwnerReferences) < 1 {
 		return reconcile.Result{}, errors.Wrap(errors.New(
-			"Missing OwnerReference from xjoinindexpipeline. "+
-				"XJoinIndexPipeline resources must be managed by an XJoinIndex. "+
-				"XJoinIndexPipeline cannot be created individually."), 0)
+			"Missing OwnerReference from xjoinindexsynchronizer. "+
+				"XJoinIndexSynchronizer resources must be managed by an XJoinIndex. "+
+				"XJoinIndexSynchronizer cannot be created individually."), 0)
 	}
 
 	p := parameters.BuildIndexParameters()
@@ -128,7 +128,7 @@ func (r *XJoinIndexPipelineReconciler) Reconcile(ctx context.Context, request ct
 		return reconcile.Result{}, errors.Wrap(err, 0)
 	}
 
-	i := XJoinIndexPipelineIteration{
+	i := XJoinIndexSynchronizerIteration{
 		Parameters: *p,
 		Iteration: common.Iteration{
 			Context:          ctx,
@@ -139,7 +139,7 @@ func (r *XJoinIndexPipelineReconciler) Reconcile(ctx context.Context, request ct
 		},
 	}
 
-	if err = i.AddFinalizer(xjoinindexpipelineFinalizer); err != nil {
+	if err = i.AddFinalizer(xjoinindexsynchronizerFinalizer); err != nil {
 		return reconcile.Result{}, errors.Wrap(err, 0)
 	}
 
@@ -222,10 +222,10 @@ func (r *XJoinIndexPipelineReconciler) Reconcile(ctx context.Context, request ct
 		return result, errors.Wrap(err, 0)
 	}
 
-	componentManager := components.NewComponentManager(common.IndexPipelineGVK.Kind+"."+instance.Spec.Name, p.Version.String())
+	componentManager := components.NewComponentManager(common.IndexSynchronizerGVK.Kind+"."+instance.Spec.Name, p.Version.String())
 
 	if indexAvroSchema.JSONFields != nil {
-		componentManager.AddComponent(&components.ElasticsearchPipeline{
+		componentManager.AddComponent(&components.ElasticsearchSynchronizer{
 			GenericElasticsearch: *genericElasticsearch,
 			JsonFields:           indexAvroSchema.JSONFields,
 		})
@@ -235,7 +235,7 @@ func (r *XJoinIndexPipelineReconciler) Reconcile(ctx context.Context, request ct
 		GenericElasticsearch: *genericElasticsearch,
 		Template:             p.ElasticSearchIndexTemplate.String(),
 		Properties:           indexAvroSchema.ESProperties,
-		WithPipeline:         indexAvroSchema.JSONFields != nil,
+		WithSynchronizer:     indexAvroSchema.JSONFields != nil,
 	}
 	componentManager.AddComponent(elasticSearchIndexComponent)
 	componentManager.AddComponent(kafkaTopic)
@@ -307,7 +307,7 @@ func (r *XJoinIndexPipelineReconciler) Reconcile(ctx context.Context, request ct
 			return
 		}
 
-		controllerutil.RemoveFinalizer(instance, xjoinindexpipelineFinalizer)
+		controllerutil.RemoveFinalizer(instance, xjoinindexsynchronizerFinalizer)
 		ctx, cancel := utils.DefaultContext()
 		defer cancel()
 		err = r.Client.Update(ctx, instance)
@@ -328,7 +328,7 @@ func (r *XJoinIndexPipelineReconciler) Reconcile(ctx context.Context, request ct
 	dataSources := make(map[string]string)
 	for _, ref := range indexAvroSchema.References {
 		//get each datasource name and resource version
-		name := strings.Split(ref.Name, "xjoindatasourcepipeline.")[1]
+		name := strings.Split(ref.Name, "xjoindatasourcesynchronizer.")[1]
 		name = strings.Split(name, ".Value")[0]
 		datasourceNamespacedName := types.NamespacedName{
 			Name:      name,

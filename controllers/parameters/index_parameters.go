@@ -1,34 +1,35 @@
 package parameters
 
 import (
-	. "github.com/redhatinsights/xjoin-operator/controllers/config"
 	"reflect"
+
+	. "github.com/redhatinsights/xjoin-operator/controllers/config"
 )
 
 type IndexParameters struct {
 	CommonParameters
-	ElasticSearchConnectorTemplate   Parameter
-	ElasticSearchURL                 Parameter
-	ElasticSearchUsername            Parameter
-	ElasticSearchPassword            Parameter
-	ElasticSearchTasksMax            Parameter
-	ElasticSearchMaxInFlightRequests Parameter
-	ElasticSearchErrorsLogEnable     Parameter
-	ElasticSearchMaxRetries          Parameter
-	ElasticSearchRetryBackoffMS      Parameter
-	ElasticSearchBatchSize           Parameter
-	ElasticSearchMaxBufferedRecords  Parameter
-	ElasticSearchLingerMS            Parameter
-	ElasticSearchNamespace           Parameter
-	ElasticSearchSecretVersion       Parameter
-	ElasticSearchPipelineTemplate    Parameter
-	ElasticSearchIndexReplicas       Parameter
-	ElasticSearchIndexShards         Parameter
-	ElasticSearchIndexTemplate       Parameter
-	KafkaBootstrapURL                Parameter
-	CustomSubgraphImages             Parameter
-	ValidationInterval               Parameter //period between validation checks (seconds)
-	ValidationPodStatusInterval      Parameter //period between checking the status of the validation pod (seconds)
+	ElasticSearchConnectorTemplate    Parameter
+	ElasticSearchURL                  Parameter
+	ElasticSearchUsername             Parameter
+	ElasticSearchPassword             Parameter
+	ElasticSearchTasksMax             Parameter
+	ElasticSearchMaxInFlightRequests  Parameter
+	ElasticSearchErrorsLogEnable      Parameter
+	ElasticSearchMaxRetries           Parameter
+	ElasticSearchRetryBackoffMS       Parameter
+	ElasticSearchBatchSize            Parameter
+	ElasticSearchMaxBufferedRecords   Parameter
+	ElasticSearchLingerMS             Parameter
+	ElasticSearchNamespace            Parameter
+	ElasticSearchSecretVersion        Parameter
+	ElasticSearchSynchronizerTemplate Parameter
+	ElasticSearchIndexReplicas        Parameter
+	ElasticSearchIndexShards          Parameter
+	ElasticSearchIndexTemplate        Parameter
+	KafkaBootstrapURL                 Parameter
+	CustomSubgraphImages              Parameter
+	ValidationInterval                Parameter //period between validation checks (seconds)
+	ValidationPodStatusInterval       Parameter //period between checking the status of the validation pod (seconds)
 }
 
 func BuildIndexParameters() *IndexParameters {

@@ -6,36 +6,36 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-type DataSourcePipelineChild struct {
+type DataSourceSynchronizerChild struct {
 	iteration *XJoinDataSourceIteration
 }
 
-func NewDataSourcePipelineChild(iteration *XJoinDataSourceIteration) *DataSourcePipelineChild {
-	return &DataSourcePipelineChild{
+func NewDataSourceSynchronizerChild(iteration *XJoinDataSourceIteration) *DataSourceSynchronizerChild {
+	return &DataSourceSynchronizerChild{
 		iteration: iteration,
 	}
 }
 
-func (d *DataSourcePipelineChild) GetParentInstance() common.XJoinObject {
+func (d *DataSourceSynchronizerChild) GetParentInstance() common.XJoinObject {
 	return d.iteration.GetInstance()
 }
 
-func (d *DataSourcePipelineChild) Create(version string) (err error) {
-	err = d.iteration.CreateDataSourcePipeline(d.iteration.GetInstance().GetName(), version)
+func (d *DataSourceSynchronizerChild) Create(version string) (err error) {
+	err = d.iteration.CreateDataSourceSynchronizer(d.iteration.GetInstance().GetName(), version)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
 	return
 }
 
-func (d *DataSourcePipelineChild) Delete(version string) (err error) {
-	err = d.iteration.DeleteDataSourcePipeline(d.iteration.GetInstance().GetName(), version)
+func (d *DataSourceSynchronizerChild) Delete(version string) (err error) {
+	err = d.iteration.DeleteDataSourceSynchronizer(d.iteration.GetInstance().GetName(), version)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
 	return
 }
 
-func (d *DataSourcePipelineChild) GetGVK() (gvk schema.GroupVersionKind) {
-	return common.DataSourcePipelineGVK
+func (d *DataSourceSynchronizerChild) GetGVK() (gvk schema.GroupVersionKind) {
+	return common.DataSourceSynchronizerGVK
 }

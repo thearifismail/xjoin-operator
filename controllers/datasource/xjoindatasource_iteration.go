@@ -15,9 +15,9 @@ type XJoinDataSourceIteration struct {
 	Parameters parameters.DataSourceParameters
 }
 
-func (i *XJoinDataSourceIteration) CreateDataSourcePipeline(name string, version string) (err error) {
-	dataSourcePipeline := unstructured.Unstructured{}
-	dataSourcePipeline.Object = map[string]interface{}{
+func (i *XJoinDataSourceIteration) CreateDataSourceSynchronizer(name string, version string) (err error) {
+	dataSourceSynchronizer := unstructured.Unstructured{}
+	dataSourceSynchronizer.Object = map[string]interface{}{
 		"metadata": map[string]interface{}{
 			"name":      name + "." + version,
 			"namespace": i.Iteration.Instance.GetNamespace(),
@@ -38,24 +38,24 @@ func (i *XJoinDataSourceIteration) CreateDataSourcePipeline(name string, version
 			"pause":            i.Parameters.Pause.Bool(),
 		},
 	}
-	dataSourcePipeline.SetGroupVersionKind(common.DataSourcePipelineGVK)
-	err = i.CreateChildResource(dataSourcePipeline, common.DataSourceGVK)
+	dataSourceSynchronizer.SetGroupVersionKind(common.DataSourceSynchronizerGVK)
+	err = i.CreateChildResource(dataSourceSynchronizer, common.DataSourceGVK)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
 	return
 }
 
-func (i *XJoinDataSourceIteration) DeleteDataSourcePipeline(name string, version string) (err error) {
-	err = i.DeleteResource(name+"."+version, common.DataSourcePipelineGVK)
+func (i *XJoinDataSourceIteration) DeleteDataSourceSynchronizer(name string, version string) (err error) {
+	err = i.DeleteResource(name+"."+version, common.DataSourceSynchronizerGVK)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
 	return
 }
 
-func (i *XJoinDataSourceIteration) ReconcilePipelines() (err error) {
-	child := NewDataSourcePipelineChild(i)
+func (i *XJoinDataSourceIteration) ReconcileSynchronizers() (err error) {
+	child := NewDataSourceSynchronizerChild(i)
 	err = i.ReconcileChild(child)
 	if err != nil {
 		return errors.Wrap(err, 0)
@@ -66,7 +66,7 @@ func (i *XJoinDataSourceIteration) ReconcilePipelines() (err error) {
 func (i *XJoinDataSourceIteration) Finalize() (err error) {
 	i.Log.Info("Starting finalizer")
 
-	err = i.DeleteAllResourceTypeWithComponentName(common.DataSourcePipelineGVK, i.GetInstance().GetName())
+	err = i.DeleteAllResourceTypeWithComponentName(common.DataSourceSynchronizerGVK, i.GetInstance().GetName())
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}

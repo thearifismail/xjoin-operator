@@ -22,16 +22,16 @@ import (
 )
 
 type KafkaConnectReconciler struct {
-	XJoinPipelineReconciler
+	XJoinSynchronizerReconciler
 	kafka           kafka.Kafka
 	kafkaConnectors kafka.Connectors
 	parameters      config.Parameters
 	log             logger.Log
-	instance        *xjoin.XJoinPipeline
+	instance        *xjoin.XJoinSynchronizer
 }
 
 func (r *KafkaConnectReconciler) Setup(reqLogger logger.Log, request ctrl.Request, ctx context.Context) error {
-	instance, err := k8sUtils.FetchXJoinPipeline(r.Client, request.NamespacedName, ctx)
+	instance, err := k8sUtils.FetchXJoinSynchronizer(r.Client, request.NamespacedName, ctx)
 	if err != nil {
 		if k8errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -101,7 +101,7 @@ func (r *KafkaConnectReconciler) Setup(reqLogger logger.Log, request ctrl.Reques
 // Reconcile
 // This reconciles Kafka Connect is running and each active connector is running
 func (r *KafkaConnectReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
-	reqLogger := logger.NewLogger("controller_kafkaconnect", "Pipeline", request.Name, "Namespace", request.Namespace)
+	reqLogger := logger.NewLogger("controller_kafkaconnect", "Synchronizer", request.Name, "Namespace", request.Namespace)
 	reqLogger.Info("Reconciling Kafka Connect")
 
 	err := r.Setup(reqLogger, request, ctx)
@@ -145,7 +145,7 @@ func (r *KafkaConnectReconciler) Reconcile(ctx context.Context, request ctrl.Req
 func (r *KafkaConnectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("xjoin-kafkaconnect").
-		For(&xjoin.XJoinPipeline{}).
+		For(&xjoin.XJoinSynchronizer{}).
 		WithEventFilter(eventFilterPredicate()).
 		WithLogger(mgr.GetLogger()).
 		WithOptions(controller.Options{
@@ -164,7 +164,7 @@ func NewKafkaConnectReconciler(
 	isTest bool) *KafkaConnectReconciler {
 
 	return &KafkaConnectReconciler{
-		XJoinPipelineReconciler: *NewXJoinReconciler(client, scheme, log, recorder, namespace, isTest),
+		XJoinSynchronizerReconciler: *NewXJoinReconciler(client, scheme, log, recorder, namespace, isTest),
 	}
 }
 

@@ -29,7 +29,7 @@ func (d *ReconcileMethods) Removed() (err error) {
 }
 
 func (d *ReconcileMethods) New(version string) (err error) {
-	err = d.iteration.CreateDataSourcePipeline(d.iteration.GetInstance().Name, version)
+	err = d.iteration.CreateDataSourceSynchronizer(d.iteration.GetInstance().Name, version)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
@@ -37,7 +37,7 @@ func (d *ReconcileMethods) New(version string) (err error) {
 }
 
 func (d *ReconcileMethods) InitialSync() (err error) {
-	err = d.iteration.ReconcilePipelines()
+	err = d.iteration.ReconcileSynchronizers()
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
@@ -45,7 +45,7 @@ func (d *ReconcileMethods) InitialSync() (err error) {
 }
 
 func (d *ReconcileMethods) Valid() (err error) {
-	err = d.iteration.ReconcilePipelines()
+	err = d.iteration.ReconcileSynchronizers()
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
@@ -53,7 +53,7 @@ func (d *ReconcileMethods) Valid() (err error) {
 }
 
 func (d *ReconcileMethods) StartRefreshing(version string) (err error) {
-	err = d.iteration.CreateDataSourcePipeline(d.iteration.GetInstance().Name, version)
+	err = d.iteration.CreateDataSourceSynchronizer(d.iteration.GetInstance().Name, version)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
@@ -61,7 +61,7 @@ func (d *ReconcileMethods) StartRefreshing(version string) (err error) {
 }
 
 func (d *ReconcileMethods) Refreshing() (err error) {
-	err = d.iteration.ReconcilePipelines()
+	err = d.iteration.ReconcileSynchronizers()
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
@@ -69,7 +69,7 @@ func (d *ReconcileMethods) Refreshing() (err error) {
 }
 
 func (d *ReconcileMethods) RefreshComplete() (err error) {
-	err = d.iteration.DeleteDataSourcePipeline(d.iteration.GetInstance().Name, d.iteration.GetInstance().Status.ActiveVersion)
+	err = d.iteration.DeleteDataSourceSynchronizer(d.iteration.GetInstance().Name, d.iteration.GetInstance().Status.ActiveVersion)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}

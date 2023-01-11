@@ -2,6 +2,9 @@ package kafka
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/go-errors/errors"
 	"github.com/google/go-cmp/cmp"
 	"github.com/redhatinsights/xjoin-go-lib/pkg/utils"
@@ -10,8 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 )
 
 var topicGroupVersionKind = schema.GroupVersionKind{
@@ -26,8 +27,8 @@ var topicsGroupVersionKind = schema.GroupVersionKind{
 	Version: "v1beta2",
 }
 
-func (t *StrimziTopics) TopicName(pipelineVersion string) string {
-	return fmt.Sprintf(t.ResourceNamePrefix + "." + pipelineVersion + ".public.hosts")
+func (t *StrimziTopics) TopicName(synchronizerVersion string) string {
+	return fmt.Sprintf(t.ResourceNamePrefix + "." + synchronizerVersion + ".public.hosts")
 }
 
 func (t *StrimziTopics) createTopicByFullName(topicName string, dryRun bool) (*unstructured.Unstructured, error) {
@@ -117,17 +118,17 @@ func (t *StrimziTopics) createTopicByFullName(topicName string, dryRun bool) (*u
 	return topic, nil
 }
 
-func (t *StrimziTopics) CreateTopic(pipelineVersion string, dryRun bool) error {
-	_, err := t.createTopicByFullName(t.TopicName(pipelineVersion), dryRun)
+func (t *StrimziTopics) CreateTopic(synchronizerVersion string, dryRun bool) error {
+	_, err := t.createTopicByFullName(t.TopicName(synchronizerVersion), dryRun)
 	return err
 }
 
-func (t *StrimziTopics) DeleteTopicByPipelineVersion(pipelineVersion string) error {
-	err := t.DeleteTopic(t.TopicName(pipelineVersion))
+func (t *StrimziTopics) DeleteTopicBySynchronizerVersion(synchronizerVersion string) error {
+	err := t.DeleteTopic(t.TopicName(synchronizerVersion))
 	return err
 }
 
-//DeleteAllTopics is only used in tests
+// DeleteAllTopics is only used in tests
 func (t *StrimziTopics) DeleteAllTopics() error {
 	ctx, cancel := utils.DefaultContext()
 	defer cancel()
@@ -165,8 +166,8 @@ func (t *StrimziTopics) DeleteAllTopics() error {
 	return nil
 }
 
-//ListTopicNamesForPipelineVersion is only used in tests
-func (t *StrimziTopics) ListTopicNamesForPipelineVersion(pipelineVersion string) ([]string, error) {
+// ListTopicNamesForSynchronizerVersion is only used in tests
+func (t *StrimziTopics) ListTopicNamesForSynchronizerVersion(synchronizerVersion string) ([]string, error) {
 	topics := &unstructured.UnstructuredList{}
 	topics.SetGroupVersionKind(topicsGroupVersionKind)
 
@@ -178,7 +179,7 @@ func (t *StrimziTopics) ListTopicNamesForPipelineVersion(pipelineVersion string)
 	var response []string
 	if topics.Items != nil {
 		for _, topic := range topics.Items {
-			if strings.Index(topic.GetName(), pipelineVersion) != -1 {
+			if strings.Index(topic.GetName(), synchronizerVersion) != -1 {
 				response = append(response, topic.GetName())
 			}
 		}
@@ -187,8 +188,8 @@ func (t *StrimziTopics) ListTopicNamesForPipelineVersion(pipelineVersion string)
 	return response, err
 }
 
-func (t *StrimziTopics) CheckDeviation(pipelineVersion string) (problem error, err error) {
-	topicName := t.TopicName(pipelineVersion)
+func (t *StrimziTopics) CheckDeviation(synchronizerVersion string) (problem error, err error) {
+	topicName := t.TopicName(synchronizerVersion)
 	topic, err := t.GetTopic(topicName)
 	topicObj := topic.(*unstructured.Unstructured)
 	if err != nil || topic == nil {
@@ -207,7 +208,7 @@ func (t *StrimziTopics) CheckDeviation(pipelineVersion string) (problem error, e
 			t.KafkaCluster), nil
 	}
 
-	newTopic, err := t.createTopicByFullName(t.TopicName(pipelineVersion), true)
+	newTopic, err := t.createTopicByFullName(t.TopicName(synchronizerVersion), true)
 	if err != nil {
 		return nil, err
 	}

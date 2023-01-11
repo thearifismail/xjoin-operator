@@ -3,11 +3,12 @@ package elasticsearch
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/elastic/go-elasticsearch/v7/esapi"
-	"github.com/redhatinsights/xjoin-go-lib/pkg/utils"
 	"io/ioutil"
 	"strings"
 	"text/template"
+
+	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/redhatinsights/xjoin-go-lib/pkg/utils"
 )
 
 func (es *ElasticSearch) IndexExists(indexName string) (bool, error) {
@@ -26,15 +27,15 @@ func (es *ElasticSearch) IndexExists(indexName string) (bool, error) {
 	return true, nil
 }
 
-func (es *ElasticSearch) CreateIndex(pipelineVersion string) error {
+func (es *ElasticSearch) CreateIndex(synchronizerVersion string) error {
 	tmpl, err := template.New("indexTemplate").Parse(es.indexTemplate)
 	if err != nil {
 		return err
 	}
 
 	params := es.parametersMap
-	params["ElasticSearchIndex"] = es.ESIndexName(pipelineVersion)
-	params["ElasticSearchPipeline"] = es.ESPipelineName(pipelineVersion)
+	params["ElasticSearchIndex"] = es.ESIndexName(synchronizerVersion)
+	params["ElasticSearchSynchronizer"] = es.ESSynchronizerName(synchronizerVersion)
 
 	var indexTemplateBuffer bytes.Buffer
 	err = tmpl.Execute(&indexTemplateBuffer, es.parametersMap)
@@ -46,7 +47,7 @@ func (es *ElasticSearch) CreateIndex(pipelineVersion string) error {
 	indexTemplateParsed = strings.ReplaceAll(indexTemplateParsed, "\t", "")
 
 	req := &esapi.IndicesCreateRequest{
-		Index: es.ESIndexName(pipelineVersion),
+		Index: es.ESIndexName(synchronizerVersion),
 		Body:  strings.NewReader(indexTemplateParsed),
 	}
 
@@ -136,10 +137,10 @@ func (es *ElasticSearch) CountIndex(index string) (int, error) {
 	return countIDsResponse.Count, nil
 }
 
-func (es *ElasticSearch) ESIndexName(pipelineVersion string) string {
-	return ESIndexName(es.resourceNamePrefix, pipelineVersion)
+func (es *ElasticSearch) ESIndexName(synchronizerVersion string) string {
+	return ESIndexName(es.resourceNamePrefix, synchronizerVersion)
 }
 
-func ESIndexName(resourceNamePrefix string, pipelineVersion string) string {
-	return resourceNamePrefix + "." + pipelineVersion
+func ESIndexName(resourceNamePrefix string, synchronizerVersion string) string {
+	return resourceNamePrefix + "." + synchronizerVersion
 }

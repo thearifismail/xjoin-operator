@@ -28,7 +28,7 @@ import (
 
 var log = logger.NewLogger("test_utils")
 
-func newXJoinReconciler(namespace string, isTest bool) *controllers.XJoinPipelineReconciler {
+func newXJoinReconciler(namespace string, isTest bool) *controllers.XJoinSynchronizerReconciler {
 	return controllers.NewXJoinReconciler(
 		test.Client,
 		scheme.Scheme,
@@ -153,7 +153,7 @@ func Before() (*Iteration, error) {
 	}
 
 	i.NamespacedName = types.NamespacedName{
-		Name:      "test-pipeline-01",
+		Name:      "test-synchronizer-01",
 		Namespace: ns,
 	}
 
@@ -182,7 +182,7 @@ func Before() (*Iteration, error) {
 		"xjoin",
 		"xjoin1337",
 		ResourceNamePrefix,
-		i.Parameters.ElasticSearchPipelineTemplate.String(),
+		i.Parameters.ElasticSearchSynchronizerTemplate.String(),
 		i.Parameters.ElasticSearchIndexTemplate.String(),
 		i.ParametersMap)
 
@@ -314,25 +314,25 @@ func After(i *Iteration) error {
 	}
 
 	log.Info("Removing finalizers")
-	var xjoinPipelineGVK = schema.GroupVersionKind{
+	var xjoinSynchronizerGVK = schema.GroupVersionKind{
 		Group:   "xjoin.cloud.redhat.com",
-		Kind:    "XJoinPipeline",
+		Kind:    "XJoinSynchronizer",
 		Version: "v1alpha1",
 	}
 
-	pipelines := &unstructured.UnstructuredList{}
-	pipelines.SetGroupVersionKind(xjoinPipelineGVK)
+	synchronizers := &unstructured.UnstructuredList{}
+	synchronizers.SetGroupVersionKind(xjoinSynchronizerGVK)
 
 	ctx, cancel := utils.DefaultContext()
 	defer cancel()
-	err = test.Client.List(ctx, pipelines, client.InNamespace(i.NamespacedName.Namespace))
+	err = test.Client.List(ctx, synchronizers, client.InNamespace(i.NamespacedName.Namespace))
 	if err != nil {
 		return err
 	}
 
-	for _, pipeline := range pipelines.Items {
-		pipeline.SetFinalizers([]string{})
-		err = test.Client.Update(ctx, &pipeline)
+	for _, synchronizer := range synchronizers.Items {
+		synchronizer.SetFinalizers([]string{})
+		err = test.Client.Update(ctx, &synchronizer)
 		if err != nil {
 			return err
 		}

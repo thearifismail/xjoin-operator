@@ -3,6 +3,10 @@ package config
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
+
 	"github.com/go-errors/errors"
 	xjoinUtils "github.com/redhatinsights/xjoin-go-lib/pkg/utils"
 	xjoin "github.com/redhatinsights/xjoin-operator/api/v1alpha1"
@@ -12,30 +16,27 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
-	"strings"
 )
 
 var log = logger.NewLogger("config")
 
 // These keys are excluded when computing a configMap hash.
-// Therefore, if they change that won't trigger a pipeline refresh
+// Therefore, if they change that won't trigger a synchronizer refresh
 var keysIgnoredByRefresh []string
 
 type Config struct {
 	hbiDBSecret          *corev1.Secret
 	elasticSearchSecret  *corev1.Secret
 	schemaRegistrySecret *corev1.Secret
-	instance             *xjoin.XJoinPipeline
+	instance             *xjoin.XJoinSynchronizer
 	configMap            *corev1.ConfigMap
 	Parameters           Parameters
 	ParametersMap        map[string]interface{}
 	client               client.Client
 }
 
-func NewConfig(instance *xjoin.XJoinPipeline, client client.Client, ctx context.Context) (*Config, error) {
+func NewConfig(instance *xjoin.XJoinSynchronizer, client client.Client, ctx context.Context) (*Config, error) {
 	config := Config{}
 
 	config.Parameters = NewXJoinConfiguration()
@@ -188,7 +189,7 @@ func (config *Config) checkIfManagedKafka(ctx context.Context) (isManaged bool, 
 	return isManaged, err
 }
 
-//Unable to pass ephemeral environment's kafka/connect cluster name into the deployment template
+// Unable to pass ephemeral environment's kafka/connect cluster name into the deployment template
 func (config *Config) buildEphemeralConfig(ctx context.Context) (err error) {
 	log.Info("Loading Kafka parameters for ephemeral environment: " + config.instance.Namespace)
 

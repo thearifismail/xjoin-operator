@@ -5,7 +5,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type XJoinIndexPipelineSpec struct {
+type XJoinIndexSynchronizerSpec struct {
 	// +kubebuilder:validation:Required
 	Name string `json:"name,omitempty"`
 
@@ -22,30 +22,30 @@ type XJoinIndexPipelineSpec struct {
 	Pause bool `json:"pause,omitempty"`
 }
 
-type XJoinIndexPipelineStatus struct {
+type XJoinIndexSynchronizerStatus struct {
 	ValidationResponse validation.ValidationResponse `json:"validationResponse,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:shortName=xjoinindexpipeline,categories=all
+// +kubebuilder:resource:shortName=xjoinindexsynchronizer,categories=all
 
-type XJoinIndexPipeline struct {
+type XJoinIndexSynchronizer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   XJoinIndexPipelineSpec   `json:"spec,omitempty"`
-	Status XJoinIndexPipelineStatus `json:"status,omitempty"`
+	Spec   XJoinIndexSynchronizerSpec   `json:"spec,omitempty"`
+	Status XJoinIndexSynchronizerStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-type XJoinIndexPipelineList struct {
+type XJoinIndexSynchronizerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []XJoinIndexPipeline `json:"items"`
+	Items           []XJoinIndexSynchronizer `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&XJoinIndexPipeline{}, &XJoinIndexPipelineList{})
+	SchemeBuilder.Register(&XJoinIndexSynchronizer{}, &XJoinIndexSynchronizerList{})
 }

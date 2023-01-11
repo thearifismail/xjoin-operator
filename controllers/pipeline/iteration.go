@@ -1,4 +1,4 @@
-package pipeline
+package synchronizer
 
 import (
 	"fmt"
@@ -24,14 +24,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-// XJoinPipelineReconciler reconciles a XJoinPipeline object
-const xjoinpipelineFinalizer = "finalizer.xjoin.cloud.redhat.com"
+// XJoinSynchronizerReconciler reconciles a XJoinSynchronizer object
+const xjoinsynchronizerFinalizer = "finalizer.xjoin.cloud.redhat.com"
 
 type ReconcileIteration struct {
-	Instance *xjoin.XJoinPipeline
+	Instance *xjoin.XJoinSynchronizer
 	// Do not alter this copy
 	// Used for tracking of whether Reconcile actually changed the state or not
-	OriginalInstance *xjoin.XJoinPipeline
+	OriginalInstance *xjoin.XJoinSynchronizer
 
 	Recorder record.EventRecorder
 	Scheme   *runtime.Scheme
@@ -83,14 +83,14 @@ func (i *ReconcileIteration) Debug(message string, keysAndValues ...interface{})
 }
 
 func (i *ReconcileIteration) SetActiveResources() {
-	i.Instance.Status.ActivePipelineVersion = i.Instance.Status.PipelineVersion
+	i.Instance.Status.ActiveSynchronizerVersion = i.Instance.Status.SynchronizerVersion
 	i.Instance.Status.ActiveAliasName = i.ESClient.AliasName()
-	i.Instance.Status.ActiveDebeziumConnectorName = i.KafkaConnectors.DebeziumConnectorName(i.Instance.Status.PipelineVersion)
-	i.Instance.Status.ActiveESConnectorName = i.KafkaConnectors.ESConnectorName(i.Instance.Status.PipelineVersion)
-	i.Instance.Status.ActiveESPipelineName = i.ESClient.ESPipelineName(i.Instance.Status.PipelineVersion)
-	i.Instance.Status.ActiveTopicName = i.KafkaTopics.TopicName(i.Instance.Status.PipelineVersion)
+	i.Instance.Status.ActiveDebeziumConnectorName = i.KafkaConnectors.DebeziumConnectorName(i.Instance.Status.SynchronizerVersion)
+	i.Instance.Status.ActiveESConnectorName = i.KafkaConnectors.ESConnectorName(i.Instance.Status.SynchronizerVersion)
+	i.Instance.Status.ActiveESSynchronizerName = i.ESClient.ESSynchronizerName(i.Instance.Status.SynchronizerVersion)
+	i.Instance.Status.ActiveTopicName = i.KafkaTopics.TopicName(i.Instance.Status.SynchronizerVersion)
 	i.Instance.Status.ActiveReplicationSlotName =
-		database.ReplicationSlotName(i.Parameters.ResourceNamePrefix.String(), i.Instance.Status.PipelineVersion)
+		database.ReplicationSlotName(i.Parameters.ResourceNamePrefix.String(), i.Instance.Status.SynchronizerVersion)
 }
 
 func (i *ReconcileIteration) UpdateStatusAndRequeue() (reconcile.Result, error) {
@@ -123,7 +123,7 @@ func (i *ReconcileIteration) UpdateStatusAndRequeue() (reconcile.Result, error) 
 				return reconcile.Result{}, err
 			}
 
-			i.Error(err, "Error updating pipeline status")
+			i.Error(err, "Error updating synchronizer status")
 			return reconcile.Result{}, err
 		}
 	}
@@ -158,8 +158,8 @@ func (i *ReconcileIteration) GetValidationPercentageThreshold() int {
 }
 
 func (i *ReconcileIteration) AddFinalizer() error {
-	if !utils.ContainsString(i.Instance.GetFinalizers(), xjoinpipelineFinalizer) {
-		controllerutil.AddFinalizer(i.Instance, xjoinpipelineFinalizer)
+	if !utils.ContainsString(i.Instance.GetFinalizers(), xjoinsynchronizerFinalizer) {
+		controllerutil.AddFinalizer(i.Instance, xjoinsynchronizerFinalizer)
 
 		ctx, cancel := utils.DefaultContext()
 		defer cancel()
@@ -170,7 +170,7 @@ func (i *ReconcileIteration) AddFinalizer() error {
 }
 
 func (i *ReconcileIteration) RemoveFinalizer() error {
-	controllerutil.RemoveFinalizer(i.Instance, xjoinpipelineFinalizer)
+	controllerutil.RemoveFinalizer(i.Instance, xjoinsynchronizerFinalizer)
 	ctx, cancel := utils.DefaultContext()
 	defer cancel()
 	return i.Client.Update(ctx, i.Instance)
@@ -202,33 +202,33 @@ func (i *ReconcileIteration) DeleteStaleDependencies() (errors []error) {
 		esIndicesToKeep        []string
 		topicsToKeep           []string
 		replicationSlotsToKeep []string
-		esPipelinesToKeep      []string
+		esSynchronizersToKeep  []string
 	)
 
 	resourceNamePrefix := i.Parameters.ResourceNamePrefix.String()
 
 	connectorsToKeep = append(connectorsToKeep, i.Instance.Status.ActiveDebeziumConnectorName)
 	connectorsToKeep = append(connectorsToKeep, i.Instance.Status.ActiveESConnectorName)
-	esPipelinesToKeep = append(esPipelinesToKeep, i.Instance.Status.ActiveESPipelineName)
+	esSynchronizersToKeep = append(esSynchronizersToKeep, i.Instance.Status.ActiveESSynchronizerName)
 	esIndicesToKeep = append(esIndicesToKeep, i.Instance.Status.ActiveIndexName)
 	topicsToKeep = append(topicsToKeep, i.Instance.Status.ActiveTopicName)
 	replicationSlotsToKeep = append(replicationSlotsToKeep, i.Instance.Status.ActiveReplicationSlotName)
 
 	var staleResources []string
 
-	// keep the in progress pipeline's resources and the active resources
-	if i.Instance.GetState() != xjoin.STATE_REMOVED && i.Instance.Status.PipelineVersion != "" {
-		connectorsToKeep = append(connectorsToKeep, i.KafkaConnectors.DebeziumConnectorName(i.Instance.Status.PipelineVersion))
-		connectorsToKeep = append(connectorsToKeep, i.KafkaConnectors.ESConnectorName(i.Instance.Status.PipelineVersion))
-		esPipelinesToKeep = append(esPipelinesToKeep, i.ESClient.ESPipelineName(i.Instance.Status.PipelineVersion))
-		esIndicesToKeep = append(esIndicesToKeep, i.ESClient.ESIndexName(i.Instance.Status.PipelineVersion))
-		topicsToKeep = append(topicsToKeep, i.KafkaTopics.TopicName(i.Instance.Status.PipelineVersion))
+	// keep the in progress synchronizer's resources and the active resources
+	if i.Instance.GetState() != xjoin.STATE_REMOVED && i.Instance.Status.SynchronizerVersion != "" {
+		connectorsToKeep = append(connectorsToKeep, i.KafkaConnectors.DebeziumConnectorName(i.Instance.Status.SynchronizerVersion))
+		connectorsToKeep = append(connectorsToKeep, i.KafkaConnectors.ESConnectorName(i.Instance.Status.SynchronizerVersion))
+		esSynchronizersToKeep = append(esSynchronizersToKeep, i.ESClient.ESSynchronizerName(i.Instance.Status.SynchronizerVersion))
+		esIndicesToKeep = append(esIndicesToKeep, i.ESClient.ESIndexName(i.Instance.Status.SynchronizerVersion))
+		topicsToKeep = append(topicsToKeep, i.KafkaTopics.TopicName(i.Instance.Status.SynchronizerVersion))
 		replicationSlotsToKeep = append(replicationSlotsToKeep, database.ReplicationSlotName(
-			resourceNamePrefix, i.Instance.Status.PipelineVersion))
+			resourceNamePrefix, i.Instance.Status.SynchronizerVersion))
 	}
 
 	i.Log.Debug("ConnectorsToKeep", "connectors", connectorsToKeep)
-	i.Log.Debug("ESPipelinesToKeep", "pipelines", esPipelinesToKeep)
+	i.Log.Debug("ESSynchronizersToKeep", "synchronizers", esSynchronizersToKeep)
 	i.Log.Debug("ESIndicesToKeep", "indices", esIndicesToKeep)
 	i.Log.Info("TopicsToKeep", "topics", topicsToKeep)
 	i.Log.Debug("ReplicationSlotsToKeep", "slots", replicationSlotsToKeep)
@@ -250,17 +250,17 @@ func (i *ReconcileIteration) DeleteStaleDependencies() (errors []error) {
 		}
 	}
 
-	// delete stale ES pipelines
-	esPipelines, err := i.ESClient.ListESPipelines()
+	// delete stale ES synchronizers
+	esSynchronizers, err := i.ESClient.ListESSynchronizers()
 	if err != nil {
 		errors = append(errors, err)
 	} else {
-		i.Log.Debug("AllESPipelines", "pipelines", esPipelines)
-		for _, esPipeline := range esPipelines {
-			if !utils.ContainsString(esPipelinesToKeep, esPipeline) && i.IsXJoinResource(esPipeline) {
-				i.Log.Info("Removing stale es pipeline", "esPipeline", esPipeline)
-				if err = i.ESClient.DeleteESPipelineByFullName(esPipeline); err != nil {
-					staleResources = append(staleResources, "ESPipeline/"+esPipeline)
+		i.Log.Debug("AllESSynchronizers", "synchronizers", esSynchronizers)
+		for _, esSynchronizer := range esSynchronizers {
+			if !utils.ContainsString(esSynchronizersToKeep, esSynchronizer) && i.IsXJoinResource(esSynchronizer) {
+				i.Log.Info("Removing stale es synchronizer", "esSynchronizer", esSynchronizer)
+				if err = i.ESClient.DeleteESSynchronizerByFullName(esSynchronizer); err != nil {
+					staleResources = append(staleResources, "ESSynchronizer/"+esSynchronizer)
 					errors = append(errors, err)
 				}
 			}
@@ -329,7 +329,7 @@ func (i *ReconcileIteration) RecreateAliasIfNeeded() (bool, error) {
 		return false, err
 	}
 
-	newIndex := i.ESClient.ESIndexName(i.Instance.Status.PipelineVersion)
+	newIndex := i.ESClient.ESIndexName(i.Instance.Status.SynchronizerVersion)
 	if currentIndices == nil || !utils.ContainsString(currentIndices, newIndex) {
 		i.Log.Info("Updating alias", "index", newIndex)
 		if err = i.ESClient.UpdateAliasByFullIndexName(i.ESClient.AliasName(), newIndex); err != nil {
@@ -343,7 +343,7 @@ func (i *ReconcileIteration) RecreateAliasIfNeeded() (bool, error) {
 }
 
 /*
- * Should be called when a refreshed pipeline failed to become valid.
+ * Should be called when a refreshed synchronizer failed to become valid.
  * This method will either keep the old invalid ES index "active" (i.e. used by the alias)
  * or update the alias to the new (also invalid) table.
  * None of these options a good one - this is about picking lesser evil
@@ -384,7 +384,7 @@ func (i *ReconcileIteration) UpdateAliasIfHealthier() error {
 		if err != nil {
 			return fmt.Errorf("failed to get host count from active index %w", err)
 		}
-		latestCount, err := i.ESClient.CountIndex(i.ESClient.ESIndexName(i.Instance.Status.PipelineVersion))
+		latestCount, err := i.ESClient.CountIndex(i.ESClient.ESIndexName(i.Instance.Status.SynchronizerVersion))
 		if err != nil {
 			return fmt.Errorf("failed to get host count from latest index %w", err)
 		}
@@ -394,12 +394,12 @@ func (i *ReconcileIteration) UpdateAliasIfHealthier() error {
 		}
 	}
 
-	// don't remove the jenkins managed alias until the operator pipeline is healthy
+	// don't remove the jenkins managed alias until the operator synchronizer is healthy
 	currIndices, err := i.ESClient.GetCurrentIndicesWithAlias("xjoin.inventory.hosts")
 	if !utils.ContainsString(currIndices, "xjoin.inventory.hosts."+i.Parameters.JenkinsManagedVersion.String()) {
 		if err = i.ESClient.UpdateAliasByFullIndexName(
 			i.ESClient.AliasName(),
-			i.ESClient.ESIndexName(i.Instance.Status.PipelineVersion)); err != nil {
+			i.ESClient.ESIndexName(i.Instance.Status.SynchronizerVersion)); err != nil {
 			return err
 		}
 	}
@@ -430,21 +430,21 @@ func (i *ReconcileIteration) CheckForDeviation() (problem error, err error) {
 		return problem, err
 	}
 
-	// ES Pipeline
-	problem, err = i.CheckESPipelineDeviation()
+	// ES Synchronizer
+	problem, err = i.CheckESSynchronizerDeviation()
 	if err != nil || problem != nil {
 		return problem, err
 	}
 
 	// Connectors
 	problem, err = i.CheckConnectorDeviation(
-		i.KafkaConnectors.ESConnectorName(i.Instance.Status.PipelineVersion), "es")
+		i.KafkaConnectors.ESConnectorName(i.Instance.Status.SynchronizerVersion), "es")
 	if err != nil || problem != nil {
 		return problem, err
 	}
 
 	problem, err = i.CheckConnectorDeviation(
-		i.KafkaConnectors.DebeziumConnectorName(i.Instance.Status.PipelineVersion), "debezium")
+		i.KafkaConnectors.DebeziumConnectorName(i.Instance.Status.SynchronizerVersion), "debezium")
 	if err != nil || problem != nil {
 		return problem, err
 	}
@@ -458,19 +458,19 @@ func (i *ReconcileIteration) CheckForDeviation() (problem error, err error) {
 	return nil, nil
 }
 
-func (i *ReconcileIteration) CheckESPipelineDeviation() (problem error, err error) {
-	i.Log.Info("Checking espipeline deviation")
-	if i.Instance.Status.PipelineVersion == "" {
+func (i *ReconcileIteration) CheckESSynchronizerDeviation() (problem error, err error) {
+	i.Log.Info("Checking essynchronizer deviation")
+	if i.Instance.Status.SynchronizerVersion == "" {
 		return nil, nil
 	}
 
-	pipelineName := i.ESClient.ESPipelineName(i.Instance.Status.PipelineVersion)
-	esPipelineExists, err := i.ESClient.ESPipelineExists(i.Instance.Status.PipelineVersion)
+	synchronizerName := i.ESClient.ESSynchronizerName(i.Instance.Status.SynchronizerVersion)
+	esSynchronizerExists, err := i.ESClient.ESSynchronizerExists(i.Instance.Status.SynchronizerVersion)
 
 	if err != nil {
 		return nil, err
-	} else if esPipelineExists == false {
-		return fmt.Errorf("elasticsearch pipeline %s not found", pipelineName), nil
+	} else if esSynchronizerExists == false {
+		return fmt.Errorf("elasticsearch synchronizer %s not found", synchronizerName), nil
 	}
 
 	return nil, nil
@@ -478,11 +478,11 @@ func (i *ReconcileIteration) CheckESPipelineDeviation() (problem error, err erro
 
 func (i *ReconcileIteration) CheckESIndexDeviation() (problem error, err error) {
 	i.Log.Info("Checking es index deviation")
-	if i.Instance.Status.PipelineVersion == "" {
+	if i.Instance.Status.SynchronizerVersion == "" {
 		return nil, nil
 	}
 
-	indexName := i.ESClient.ESIndexName(i.Instance.Status.PipelineVersion)
+	indexName := i.ESClient.ESIndexName(i.Instance.Status.SynchronizerVersion)
 	indexExists, err := i.ESClient.IndexExists(indexName)
 
 	if err != nil {
@@ -498,11 +498,11 @@ func (i *ReconcileIteration) CheckESIndexDeviation() (problem error, err error) 
 
 func (i *ReconcileIteration) CheckTopicDeviation() (problem error, err error) {
 	i.Log.Info("Checking topic deviation")
-	if i.Instance.Status.PipelineVersion == "" {
+	if i.Instance.Status.SynchronizerVersion == "" {
 		return nil, nil
 	}
 
-	return i.KafkaTopics.CheckDeviation(i.Instance.Status.PipelineVersion)
+	return i.KafkaTopics.CheckDeviation(i.Instance.Status.SynchronizerVersion)
 }
 
 func (i *ReconcileIteration) CheckConnectorDeviation(connectorName string, connectorType string) (problem error, err error) {
@@ -546,7 +546,7 @@ func (i *ReconcileIteration) CheckConnectorDeviation(connectorName string, conne
 
 	i.Log.Info("Checking connector spec")
 	// compares the spec of the existing connector with the spec we would create if we were creating a new connector now
-	newConnector, err := i.KafkaConnectors.CreateDryConnectorByType(connectorType, i.Instance.Status.PipelineVersion)
+	newConnector, err := i.KafkaConnectors.CreateDryConnectorByType(connectorType, i.Instance.Status.SynchronizerVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -565,20 +565,20 @@ func (i *ReconcileIteration) CheckConnectorDeviation(connectorName string, conne
 	return nil, nil
 }
 
-func (i *ReconcileIteration) DeleteResourceForPipeline(version string) error {
-	err := i.KafkaTopics.DeleteTopicByPipelineVersion(version)
+func (i *ReconcileIteration) DeleteResourceForSynchronizer(version string) error {
+	err := i.KafkaTopics.DeleteTopicBySynchronizerVersion(version)
 	if err != nil {
 		i.Error(err, "Error deleting topic")
 		return err
 	}
 
-	err = i.KafkaConnectors.DeleteConnectorsForPipelineVersion(version)
+	err = i.KafkaConnectors.DeleteConnectorsForSynchronizerVersion(version)
 	if err != nil {
 		i.Error(err, "Error deleting connectors")
 		return err
 	}
 
-	err = i.InventoryDb.RemoveReplicationSlotsForPipelineVersion(version)
+	err = i.InventoryDb.RemoveReplicationSlotsForSynchronizerVersion(version)
 	if err != nil {
 		i.Error(err, "Error removing replication slots")
 		return err
@@ -590,9 +590,9 @@ func (i *ReconcileIteration) DeleteResourceForPipeline(version string) error {
 		return err
 	}
 
-	err = i.ESClient.DeleteESPipelineByVersion(version)
+	err = i.ESClient.DeleteESSynchronizerByVersion(version)
 	if err != nil {
-		i.Error(err, "Error deleting ES pipeline")
+		i.Error(err, "Error deleting ES synchronizer")
 		return err
 	}
 

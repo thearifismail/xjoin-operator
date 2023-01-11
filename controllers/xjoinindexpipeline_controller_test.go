@@ -20,7 +20,7 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-var _ = Describe("XJoinIndexPipeline", func() {
+var _ = Describe("XJoinIndexSynchronizer", func() {
 	var namespace string
 
 	BeforeEach(func() {
@@ -37,42 +37,42 @@ var _ = Describe("XJoinIndexPipeline", func() {
 	})
 
 	Context("Reconcile Creation", func() {
-		It("Should add a finalizer to the indexPipeline", func() {
-			reconciler := XJoinIndexPipelineTestReconciler{
+		It("Should add a finalizer to the indexSynchronizer", func() {
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
-				Name:           "test-index-pipeline",
+				Name:           "test-index-synchronizer",
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 			}
-			createdIndexPipeline := reconciler.ReconcileNew()
-			Expect(createdIndexPipeline.Finalizers).To(HaveLen(1))
-			Expect(createdIndexPipeline.Finalizers).To(ContainElement("finalizer.xjoin.indexpipeline.cloud.redhat.com"))
+			createdIndexSynchronizer := reconciler.ReconcileNew()
+			Expect(createdIndexSynchronizer.Finalizers).To(HaveLen(1))
+			Expect(createdIndexSynchronizer.Finalizers).To(ContainElement("finalizer.xjoin.indexsynchronizer.cloud.redhat.com"))
 		})
 
 		It("Should create an Elasticsearch Index", func() {
-			reconciler := XJoinIndexPipelineTestReconciler{
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
-				Name:           "test-index-pipeline",
+				Name:           "test-index-synchronizer",
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 			}
 			reconciler.ReconcileNew()
 
 			info := httpmock.GetCallCountInfo()
-			count := info["PUT http://localhost:9200/xjoinindexpipeline.test-index-pipeline.1234"]
+			count := info["PUT http://localhost:9200/xjoinindexsynchronizer.test-index-synchronizer.1234"]
 			Expect(count).To(Equal(1))
 		})
 
 		It("Should create an Elasticsearch Connector", func() {
-			reconciler := XJoinIndexPipelineTestReconciler{
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
-				Name:           "test-index-pipeline",
+				Name:           "test-index-synchronizer",
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 			}
 			reconciler.ReconcileNew()
 
-			connectorName := "xjoinindexpipeline.test-index-pipeline.1234"
+			connectorName := "xjoinindexsynchronizer.test-index-synchronizer.1234"
 			connectorLookupKey := types.NamespacedName{Name: connectorName, Namespace: namespace}
 			elasticsearchConnector := &v1beta2.KafkaConnector{}
 
@@ -102,15 +102,15 @@ var _ = Describe("XJoinIndexPipeline", func() {
 		})
 
 		It("Should create a Kafka Topic", func() {
-			reconciler := XJoinIndexPipelineTestReconciler{
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
-				Name:           "test-index-pipeline",
+				Name:           "test-index-synchronizer",
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 			}
 			reconciler.ReconcileNew()
 
-			topicName := "xjoinindexpipeline.test-index-pipeline.1234"
+			topicName := "xjoinindexsynchronizer.test-index-synchronizer.1234"
 			topicLookupKey := types.NamespacedName{Name: topicName, Namespace: namespace}
 			topic := &v1beta2.KafkaTopic{}
 
@@ -139,9 +139,9 @@ var _ = Describe("XJoinIndexPipeline", func() {
 		})
 
 		It("Should create an Avro Schema", func() {
-			reconciler := XJoinIndexPipelineTestReconciler{
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
-				Name:           "test-index-pipeline",
+				Name:           "test-index-synchronizer",
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 			}
@@ -150,20 +150,20 @@ var _ = Describe("XJoinIndexPipeline", func() {
 			//TODO validate the body of the request is correct
 			//validates the correct API calls were made
 			info := httpmock.GetCallCountInfo()
-			count := info["GET http://apicurio:1080/apis/ccompat/v6/subjects/xjoinindexpipeline.test-index-pipeline.1234-value/versions/1"]
+			count := info["GET http://apicurio:1080/apis/ccompat/v6/subjects/xjoinindexsynchronizer.test-index-synchronizer.1234-value/versions/1"]
 			Expect(count).To(Equal(1))
 
-			count = info["POST http://apicurio:1080/apis/ccompat/v6/subjects/xjoinindexpipeline.test-index-pipeline.1234-value/versions"]
+			count = info["POST http://apicurio:1080/apis/ccompat/v6/subjects/xjoinindexsynchronizer.test-index-synchronizer.1234-value/versions"]
 			Expect(count).To(Equal(1))
 
-			count = info["GET http://apicurio:1080/apis/ccompat/v6/subjects/xjoinindexpipeline.test-index-pipeline.1234-value/versions/latest"]
+			count = info["GET http://apicurio:1080/apis/ccompat/v6/subjects/xjoinindexsynchronizer.test-index-synchronizer.1234-value/versions/latest"]
 			Expect(count).To(Equal(1))
 		})
 
 		It("Should create a GraphQL Schema", func() {
-			reconciler := XJoinIndexPipelineTestReconciler{
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:            namespace,
-				Name:                 "test-index-pipeline",
+				Name:                 "test-index-synchronizer",
 				ConfigFileName:       "xjoinindex",
 				CustomSubgraphImages: nil,
 				K8sClient:            k8sClient,
@@ -173,26 +173,26 @@ var _ = Describe("XJoinIndexPipeline", func() {
 			//TODO validate the body of the request is correct
 			//validates the correct API calls were made
 			info := httpmock.GetCallCountInfo()
-			count := info["GET http://apicurio:1080/apis/registry/v2/groups/default/artifacts/xjoinindexpipeline.test-index-pipeline.1234/versions"]
+			count := info["GET http://apicurio:1080/apis/registry/v2/groups/default/artifacts/xjoinindexsynchronizer.test-index-synchronizer.1234/versions"]
 			Expect(count).To(Equal(1))
 
 			count = info["POST http://apicurio:1080/apis/registry/v2/groups/default/artifacts"]
 			Expect(count).To(Equal(1))
 
-			count = info["PUT http://apicurio:1080/apis/registry/v2/groups/default/artifacts/xjoinindexpipeline.test-index-pipeline.1234/meta"]
+			count = info["PUT http://apicurio:1080/apis/registry/v2/groups/default/artifacts/xjoinindexsynchronizer.test-index-synchronizer.1234/meta"]
 			Expect(count).To(Equal(1))
 		})
 
 		It("Should create an xjoin-core deployment", func() {
-			reconciler := XJoinIndexPipelineTestReconciler{
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
-				Name:           "test-index-pipeline",
+				Name:           "test-index-synchronizer",
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 			}
 			reconciler.ReconcileNew()
 
-			deploymentName := "xjoin-core-xjoinindexpipeline-test-index-pipeline-1234"
+			deploymentName := "xjoin-core-xjoinindexsynchronizer-test-index-synchronizer-1234"
 			deploymentLookupKey := types.NamespacedName{Name: deploymentName, Namespace: namespace}
 			deployment := &v1.Deployment{}
 
@@ -212,15 +212,15 @@ var _ = Describe("XJoinIndexPipeline", func() {
 			Expect(deployment.Namespace).To(Equal(namespace))
 			Expect(deployment.Spec.Replicas).To(Equal(&replicas))
 			Expect(deployment.Spec.Selector.MatchLabels).To(Equal(map[string]string{
-				"app":         "xjoin-core-xjoinindexpipeline-test-index-pipeline-1234",
-				"xjoin.index": "xjoin-core-xjoinindexpipeline-test-index-pipeline",
+				"app":         "xjoin-core-xjoinindexsynchronizer-test-index-synchronizer-1234",
+				"xjoin.index": "xjoin-core-xjoinindexsynchronizer-test-index-synchronizer",
 			}))
 			Expect(deployment.GetLabels()).To(Equal(map[string]string{
-				"app":         "xjoin-core-xjoinindexpipeline-test-index-pipeline-1234",
-				"xjoin.index": "xjoin-core-xjoinindexpipeline-test-index-pipeline",
+				"app":         "xjoin-core-xjoinindexsynchronizer-test-index-synchronizer-1234",
+				"xjoin.index": "xjoin-core-xjoinindexsynchronizer-test-index-synchronizer",
 			}))
 			Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1))
-			Expect(deployment.Spec.Template.Spec.Containers[0].Name).To(Equal("xjoin-core-xjoinindexpipeline-test-index-pipeline-1234"))
+			Expect(deployment.Spec.Template.Spec.Containers[0].Name).To(Equal("xjoin-core-xjoinindexsynchronizer-test-index-synchronizer-1234"))
 			Expect(deployment.Spec.Template.Spec.Containers[0].Image).To(Equal("quay.io/ckyrouac/xjoin-core:latest"))
 			Expect(deployment.Spec.Template.Spec.Containers[0].Env).To(HaveLen(5))
 			Expect(deployment.Spec.Template.Spec.Containers[0].Env).To(ContainElements([]v12.EnvVar{
@@ -231,7 +231,7 @@ var _ = Describe("XJoinIndexPipeline", func() {
 				},
 				{
 					Name:      "SINK_TOPIC",
-					Value:     "xjoinindexpipeline.test",
+					Value:     "xjoinindexsynchronizer.test",
 					ValueFrom: nil,
 				},
 				{
@@ -246,7 +246,7 @@ var _ = Describe("XJoinIndexPipeline", func() {
 				},
 				{
 					Name:      "SINK_SCHEMA",
-					Value:     `{"type":"record","name":"Value","namespace":"test-index-pipeline"}`,
+					Value:     `{"type":"record","name":"Value","namespace":"test-index-synchronizer"}`,
 					ValueFrom: nil,
 				},
 			}))
@@ -267,15 +267,15 @@ var _ = Describe("XJoinIndexPipeline", func() {
 		})
 
 		It("Should create an xjoin-api-subgraph deployment", func() {
-			reconciler := XJoinIndexPipelineTestReconciler{
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
-				Name:           "test-index-pipeline",
+				Name:           "test-index-synchronizer",
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 			}
 			reconciler.ReconcileNew()
 
-			deploymentName := "xjoinindexpipeline-test-index-pipeline-1234"
+			deploymentName := "xjoinindexsynchronizer-test-index-synchronizer-1234"
 			deploymentLookupKey := types.NamespacedName{Name: deploymentName, Namespace: namespace}
 			deployment := &v1.Deployment{}
 
@@ -295,22 +295,22 @@ var _ = Describe("XJoinIndexPipeline", func() {
 			Expect(deployment.Namespace).To(Equal(namespace))
 			Expect(deployment.Spec.Replicas).To(Equal(&replicas))
 			Expect(deployment.GetLabels()).To(Equal(map[string]string{
-				"app":         "xjoinindexpipeline-test-index-pipeline-1234",
-				"xjoin.index": "xjoinindexpipeline-test-index-pipeline",
+				"app":         "xjoinindexsynchronizer-test-index-synchronizer-1234",
+				"xjoin.index": "xjoinindexsynchronizer-test-index-synchronizer",
 			}))
 			Expect(deployment.Spec.Selector.MatchLabels).To(Equal(map[string]string{
-				"app":         "xjoinindexpipeline-test-index-pipeline-1234",
-				"xjoin.index": "xjoinindexpipeline-test-index-pipeline",
+				"app":         "xjoinindexsynchronizer-test-index-synchronizer-1234",
+				"xjoin.index": "xjoinindexsynchronizer-test-index-synchronizer",
 			}))
 
 			Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1))
-			Expect(deployment.Spec.Template.Spec.Containers[0].Name).To(Equal("xjoinindexpipeline-test-index-pipeline-1234"))
+			Expect(deployment.Spec.Template.Spec.Containers[0].Name).To(Equal("xjoinindexsynchronizer-test-index-synchronizer-1234"))
 			Expect(deployment.Spec.Template.Spec.Containers[0].Image).To(Equal("quay.io/ckyrouac/xjoin-api-subgraph:latest"))
 			Expect(deployment.Spec.Template.Spec.Containers[0].Env).To(HaveLen(9))
 			Expect(deployment.Spec.Template.Spec.Containers[0].Env).To(ContainElements([]v12.EnvVar{
 				{
 					Name:      "AVRO_SCHEMA",
-					Value:     `{"type":"record","name":"Value","namespace":"test-index-pipeline"}`,
+					Value:     `{"type":"record","name":"Value","namespace":"test-index-synchronizer"}`,
 					ValueFrom: nil,
 				},
 				{
@@ -345,12 +345,12 @@ var _ = Describe("XJoinIndexPipeline", func() {
 				},
 				{
 					Name:      "ELASTIC_SEARCH_INDEX",
-					Value:     "xjoinindexpipeline.test-index-pipeline.1234",
+					Value:     "xjoinindexsynchronizer.test-index-synchronizer.1234",
 					ValueFrom: nil,
 				},
 				{
 					Name:      "GRAPHQL_SCHEMA_NAME",
-					Value:     "xjoinindexpipeline.test-index-pipeline.1234",
+					Value:     "xjoinindexsynchronizer.test-index-synchronizer.1234",
 					ValueFrom: nil,
 				},
 			}))
@@ -377,9 +377,9 @@ var _ = Describe("XJoinIndexPipeline", func() {
 		})
 
 		It("Should create custom subgraph graphql schema", func() {
-			reconciler := XJoinIndexPipelineTestReconciler{
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
-				Name:           "test-index-pipeline",
+				Name:           "test-index-synchronizer",
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 				CustomSubgraphImages: []v1alpha1.CustomSubgraphImage{{
@@ -392,20 +392,20 @@ var _ = Describe("XJoinIndexPipeline", func() {
 			//TODO validate the body of the request is correct
 			//validates the correct API calls were made
 			info := httpmock.GetCallCountInfo()
-			count := info["GET http://apicurio:1080/apis/registry/v2/groups/default/artifacts/xjoinindexpipeline.test-index-pipeline-test-custom-image.1234/versions"]
+			count := info["GET http://apicurio:1080/apis/registry/v2/groups/default/artifacts/xjoinindexsynchronizer.test-index-synchronizer-test-custom-image.1234/versions"]
 			Expect(count).To(Equal(1))
 
 			count = info["POST http://apicurio:1080/apis/registry/v2/groups/default/artifacts"]
 			Expect(count).To(Equal(2)) //called once for generic gql schema, then a second time for custom subgraph schema
 
-			count = info["PUT http://apicurio:1080/apis/registry/v2/groups/default/artifacts/xjoinindexpipeline.test-index-pipeline-test-custom-image.1234/meta"]
+			count = info["PUT http://apicurio:1080/apis/registry/v2/groups/default/artifacts/xjoinindexsynchronizer.test-index-synchronizer-test-custom-image.1234/meta"]
 			Expect(count).To(Equal(1))
 		})
 
 		It("Should create custom subgraph deployments", func() {
-			reconciler := XJoinIndexPipelineTestReconciler{
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
-				Name:           "test-index-pipeline",
+				Name:           "test-index-synchronizer",
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 				CustomSubgraphImages: []v1alpha1.CustomSubgraphImage{{
@@ -415,7 +415,7 @@ var _ = Describe("XJoinIndexPipeline", func() {
 			}
 			reconciler.ReconcileNew()
 
-			deploymentName := "xjoinindexpipeline-test-index-pipeline-test-custom-image-1234"
+			deploymentName := "xjoinindexsynchronizer-test-index-synchronizer-test-custom-image-1234"
 			deploymentLookupKey := types.NamespacedName{Name: deploymentName, Namespace: namespace}
 			deployment := &v1.Deployment{}
 
@@ -435,12 +435,12 @@ var _ = Describe("XJoinIndexPipeline", func() {
 			Expect(deployment.Namespace).To(Equal(namespace))
 			Expect(deployment.Spec.Replicas).To(Equal(&replicas))
 			Expect(deployment.GetLabels()).To(Equal(map[string]string{
-				"app":         "xjoinindexpipeline-test-index-pipeline-test-custom-image-1234",
-				"xjoin.index": "xjoinindexpipeline-test-index-pipeline-test-custom-image",
+				"app":         "xjoinindexsynchronizer-test-index-synchronizer-test-custom-image-1234",
+				"xjoin.index": "xjoinindexsynchronizer-test-index-synchronizer-test-custom-image",
 			}))
 			Expect(deployment.Spec.Selector.MatchLabels).To(Equal(map[string]string{
-				"app":         "xjoinindexpipeline-test-index-pipeline-test-custom-image-1234",
-				"xjoin.index": "xjoinindexpipeline-test-index-pipeline-test-custom-image",
+				"app":         "xjoinindexsynchronizer-test-index-synchronizer-test-custom-image-1234",
+				"xjoin.index": "xjoinindexsynchronizer-test-index-synchronizer-test-custom-image",
 			}))
 
 			Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1))
@@ -450,7 +450,7 @@ var _ = Describe("XJoinIndexPipeline", func() {
 			Expect(deployment.Spec.Template.Spec.Containers[0].Env).To(ContainElements([]v12.EnvVar{
 				{
 					Name:      "AVRO_SCHEMA",
-					Value:     `{"type":"record","name":"Value","namespace":"test-index-pipeline"}`,
+					Value:     `{"type":"record","name":"Value","namespace":"test-index-synchronizer"}`,
 					ValueFrom: nil,
 				},
 				{
@@ -485,12 +485,12 @@ var _ = Describe("XJoinIndexPipeline", func() {
 				},
 				{
 					Name:      "ELASTIC_SEARCH_INDEX",
-					Value:     "xjoinindexpipeline.test-index-pipeline.1234",
+					Value:     "xjoinindexsynchronizer.test-index-synchronizer.1234",
 					ValueFrom: nil,
 				},
 				{
 					Name:      "GRAPHQL_SCHEMA_NAME",
-					Value:     "xjoinindexpipeline.test-index-pipeline-test-custom-image.1234",
+					Value:     "xjoinindexsynchronizer.test-index-synchronizer-test-custom-image.1234",
 					ValueFrom: nil,
 				},
 			}))
@@ -516,7 +516,7 @@ var _ = Describe("XJoinIndexPipeline", func() {
 			Expect(deployment.Spec.ProgressDeadlineSeconds).To(Equal(&progressDeadlineSeconds))
 		})
 
-		It("Should create an Elasticsearch Pipeline when the AvroSchema contains at least one JSON field", func() {
+		It("Should create an Elasticsearch Synchronizer when the AvroSchema contains at least one JSON field", func() {
 			dataSourceName := "testdatasource"
 			datasourceReconciler := DatasourceTestReconciler{
 				Namespace: namespace,
@@ -526,9 +526,9 @@ var _ = Describe("XJoinIndexPipeline", func() {
 			datasourceReconciler.ReconcileNew()
 			createdDataSource := datasourceReconciler.ReconcileValid()
 
-			reconciler := XJoinIndexPipelineTestReconciler{
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
-				Name:           "test-index-pipeline",
+				Name:           "test-index-synchronizer",
 				ConfigFileName: "xjoinindex-with-json-field",
 				K8sClient:      k8sClient,
 				DataSources: []DataSource{{
@@ -540,61 +540,61 @@ var _ = Describe("XJoinIndexPipeline", func() {
 			reconciler.ReconcileNew()
 
 			info := httpmock.GetCallCountInfo()
-			count := info["GET http://apicurio:1080/apis/ccompat/v6/subjects/xjoindatasourcepipeline.testdatasource."+createdDataSource.Status.ActiveVersion+"-value/versions/latest"]
+			count := info["GET http://apicurio:1080/apis/ccompat/v6/subjects/xjoindatasourcesynchronizer.testdatasource."+createdDataSource.Status.ActiveVersion+"-value/versions/latest"]
 			Expect(count).To(Equal(1))
 
-			count = info["GET http://localhost:9200/_ingest/pipeline/xjoinindexpipeline.test-index-pipeline.1234"]
+			count = info["GET http://localhost:9200/_ingest/synchronizer/xjoinindexsynchronizer.test-index-synchronizer.1234"]
 			Expect(count).To(Equal(1))
 
-			count = info["PUT http://localhost:9200/_ingest/pipeline/xjoinindexpipeline.test-index-pipeline.1234"]
+			count = info["PUT http://localhost:9200/_ingest/synchronizer/xjoinindexsynchronizer.test-index-synchronizer.1234"]
 			Expect(count).To(Equal(1))
 		})
 	})
 
 	Context("Reconcile Deletion", func() {
 		It("Should delete the Elasticsearch index", func() {
-			name := "test-index-pipeline"
-			reconciler := XJoinIndexPipelineTestReconciler{
+			name := "test-index-synchronizer"
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
 				Name:           name,
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 			}
-			createdIndexPipeline := reconciler.ReconcileNew()
+			createdIndexSynchronizer := reconciler.ReconcileNew()
 
-			err := k8sClient.Delete(context.Background(), &createdIndexPipeline)
+			err := k8sClient.Delete(context.Background(), &createdIndexSynchronizer)
 			checkError(err)
 			reconciler.ReconcileDelete()
 
 			info := httpmock.GetCallCountInfo()
-			count := info["HEAD http://localhost:9200/xjoinindexpipeline."+name+".1234"]
+			count := info["HEAD http://localhost:9200/xjoinindexsynchronizer."+name+".1234"]
 			Expect(count).To(Equal(1))
 
-			count = info["DELETE http://localhost:9200/xjoinindexpipeline."+name+".1234"]
+			count = info["DELETE http://localhost:9200/xjoinindexsynchronizer."+name+".1234"]
 			Expect(count).To(Equal(1))
 		})
 
 		It("Should delete the Elasticsearch connector", func() {
-			name := "test-index-pipeline"
-			reconciler := XJoinIndexPipelineTestReconciler{
+			name := "test-index-synchronizer"
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
 				Name:           name,
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 			}
-			createdIndexPipeline := reconciler.ReconcileNew()
+			createdIndexSynchronizer := reconciler.ReconcileNew()
 
 			connectors := &v1beta2.KafkaConnectorList{}
 			err := k8sClient.List(context.Background(), connectors, client.InNamespace(namespace))
 			checkError(err)
 			Expect(connectors.Items).To(HaveLen(1))
 
-			err = k8sClient.Delete(context.Background(), &createdIndexPipeline)
+			err = k8sClient.Delete(context.Background(), &createdIndexSynchronizer)
 			checkError(err)
 			reconciler.ReconcileDelete()
 
 			info := httpmock.GetCallCountInfo()
-			count := info["GET http://connect-connect-api."+namespace+".svc:8083/connectors/xjoinindexpipeline."+name+".1234"]
+			count := info["GET http://connect-connect-api."+namespace+".svc:8083/connectors/xjoinindexsynchronizer."+name+".1234"]
 			Expect(count).To(Equal(6))
 
 			connectors = &v1beta2.KafkaConnectorList{}
@@ -604,21 +604,21 @@ var _ = Describe("XJoinIndexPipeline", func() {
 		})
 
 		It("Should delete the Kafka topic", func() {
-			name := "test-index-pipeline"
-			reconciler := XJoinIndexPipelineTestReconciler{
+			name := "test-index-synchronizer"
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
 				Name:           name,
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 			}
-			createdIndexPipeline := reconciler.ReconcileNew()
+			createdIndexSynchronizer := reconciler.ReconcileNew()
 
 			topics := &v1beta2.KafkaTopicList{}
 			err := k8sClient.List(context.Background(), topics, client.InNamespace(namespace))
 			checkError(err)
 			Expect(topics.Items).To(HaveLen(1))
 
-			err = k8sClient.Delete(context.Background(), &createdIndexPipeline)
+			err = k8sClient.Delete(context.Background(), &createdIndexSynchronizer)
 			checkError(err)
 			reconciler.ReconcileDelete()
 
@@ -629,62 +629,62 @@ var _ = Describe("XJoinIndexPipeline", func() {
 		})
 
 		It("Should delete the Avro schema", func() {
-			name := "test-index-pipeline"
-			reconciler := XJoinIndexPipelineTestReconciler{
+			name := "test-index-synchronizer"
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
 				Name:           name,
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 			}
-			createdIndexPipeline := reconciler.ReconcileNew()
+			createdIndexSynchronizer := reconciler.ReconcileNew()
 
-			err := k8sClient.Delete(context.Background(), &createdIndexPipeline)
+			err := k8sClient.Delete(context.Background(), &createdIndexSynchronizer)
 			checkError(err)
 			reconciler.ReconcileDelete()
 
 			info := httpmock.GetCallCountInfo()
-			count := info["DELETE http://apicurio:1080/apis/ccompat/v6/subjects/xjoinindexpipeline."+name+".1234-value"]
+			count := info["DELETE http://apicurio:1080/apis/ccompat/v6/subjects/xjoinindexsynchronizer."+name+".1234-value"]
 			Expect(count).To(Equal(1))
 		})
 
 		It("Should delete the GraphQL schema", func() {
-			name := "test-index-pipeline"
-			reconciler := XJoinIndexPipelineTestReconciler{
+			name := "test-index-synchronizer"
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
 				Name:           name,
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 			}
-			createdIndexPipeline := reconciler.ReconcileNew()
+			createdIndexSynchronizer := reconciler.ReconcileNew()
 
-			err := k8sClient.Delete(context.Background(), &createdIndexPipeline)
+			err := k8sClient.Delete(context.Background(), &createdIndexSynchronizer)
 			checkError(err)
 			reconciler.ReconcileDelete()
 
 			info := httpmock.GetCallCountInfo()
-			count := info["DELETE http://apicurio:1080/apis/ccompat/v6/subjects/xjoinindexpipeline-"+name+"-1234"]
+			count := info["DELETE http://apicurio:1080/apis/ccompat/v6/subjects/xjoinindexsynchronizer-"+name+"-1234"]
 			Expect(count).To(Equal(1))
 		})
 
 		It("Should delete the xjoin-core deployment", func() {
-			name := "test-index-pipeline"
-			reconciler := XJoinIndexPipelineTestReconciler{
+			name := "test-index-synchronizer"
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
 				Name:           name,
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 			}
-			createdIndexPipeline := reconciler.ReconcileNew()
+			createdIndexSynchronizer := reconciler.ReconcileNew()
 
 			deployment := &unstructured.Unstructured{}
 			deployment.SetGroupVersionKind(common.DeploymentGVK)
-			deploymentName := "xjoin-core-xjoinindexpipeline-" + name + "-1234"
+			deploymentName := "xjoin-core-xjoinindexsynchronizer-" + name + "-1234"
 			deploymentLookup := types.NamespacedName{Name: deploymentName, Namespace: namespace}
 			err := k8sClient.Get(context.Background(), deploymentLookup, deployment)
 			checkError(err)
 			Expect(deployment.GetName()).To(Equal(deploymentName))
 
-			err = k8sClient.Delete(context.Background(), &createdIndexPipeline)
+			err = k8sClient.Delete(context.Background(), &createdIndexSynchronizer)
 			checkError(err)
 			reconciler.ReconcileDelete()
 
@@ -696,24 +696,24 @@ var _ = Describe("XJoinIndexPipeline", func() {
 		})
 
 		It("Should delete the xjoin-api-subgraph deployment", func() {
-			name := "test-index-pipeline"
-			reconciler := XJoinIndexPipelineTestReconciler{
+			name := "test-index-synchronizer"
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
 				Name:           name,
 				ConfigFileName: "xjoinindex",
 				K8sClient:      k8sClient,
 			}
-			createdIndexPipeline := reconciler.ReconcileNew()
+			createdIndexSynchronizer := reconciler.ReconcileNew()
 
 			deployment := &unstructured.Unstructured{}
 			deployment.SetGroupVersionKind(common.DeploymentGVK)
-			deploymentName := "xjoinindexpipeline-" + name + "-1234"
+			deploymentName := "xjoinindexsynchronizer-" + name + "-1234"
 			deploymentLookup := types.NamespacedName{Name: deploymentName, Namespace: namespace}
 			err := k8sClient.Get(context.Background(), deploymentLookup, deployment)
 			checkError(err)
 			Expect(deployment.GetName()).To(Equal(deploymentName))
 
-			err = k8sClient.Delete(context.Background(), &createdIndexPipeline)
+			err = k8sClient.Delete(context.Background(), &createdIndexSynchronizer)
 			checkError(err)
 			reconciler.ReconcileDelete()
 
@@ -725,8 +725,8 @@ var _ = Describe("XJoinIndexPipeline", func() {
 		})
 
 		It("Should delete the custom image's xjoin-api-subgraph deployment", func() {
-			name := "test-index-pipeline"
-			reconciler := XJoinIndexPipelineTestReconciler{
+			name := "test-index-synchronizer"
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
 				Name:           name,
 				ConfigFileName: "xjoinindex",
@@ -738,17 +738,17 @@ var _ = Describe("XJoinIndexPipeline", func() {
 					},
 				},
 			}
-			createdIndexPipeline := reconciler.ReconcileNew()
+			createdIndexSynchronizer := reconciler.ReconcileNew()
 
 			deployment := &unstructured.Unstructured{}
 			deployment.SetGroupVersionKind(common.DeploymentGVK)
-			deploymentName := "xjoinindexpipeline-test-index-pipeline-test-custom-image-1234"
+			deploymentName := "xjoinindexsynchronizer-test-index-synchronizer-test-custom-image-1234"
 			deploymentLookup := types.NamespacedName{Name: deploymentName, Namespace: namespace}
 			err := k8sClient.Get(context.Background(), deploymentLookup, deployment)
 			checkError(err)
 			Expect(deployment.GetName()).To(Equal(deploymentName))
 
-			err = k8sClient.Delete(context.Background(), &createdIndexPipeline)
+			err = k8sClient.Delete(context.Background(), &createdIndexSynchronizer)
 			checkError(err)
 			reconciler.ReconcileDelete()
 
@@ -760,8 +760,8 @@ var _ = Describe("XJoinIndexPipeline", func() {
 		})
 
 		It("Should delete the custom image's graphql schema", func() {
-			name := "test-index-pipeline"
-			reconciler := XJoinIndexPipelineTestReconciler{
+			name := "test-index-synchronizer"
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
 				Name:           name,
 				ConfigFileName: "xjoinindex",
@@ -773,21 +773,21 @@ var _ = Describe("XJoinIndexPipeline", func() {
 					},
 				},
 			}
-			createdIndexPipeline := reconciler.ReconcileNew()
+			createdIndexSynchronizer := reconciler.ReconcileNew()
 
-			err := k8sClient.Delete(context.Background(), &createdIndexPipeline)
+			err := k8sClient.Delete(context.Background(), &createdIndexSynchronizer)
 			checkError(err)
 			reconciler.ReconcileDelete()
 
 			info := httpmock.GetCallCountInfo()
-			count := info["GET http://apicurio:1080/apis/registry/v2/groups/default/artifacts/xjoinindexpipeline.test-index-pipeline-test-custom-image.1234/versions"]
+			count := info["GET http://apicurio:1080/apis/registry/v2/groups/default/artifacts/xjoinindexsynchronizer.test-index-synchronizer-test-custom-image.1234/versions"]
 			Expect(count).To(Equal(1))
 
-			count = info["DELETE http://apicurio:1080/apis/registry/v2/groups/default/artifacts/xjoinindexpipeline.test-index-pipeline-test-custom-image.1234"]
+			count = info["DELETE http://apicurio:1080/apis/registry/v2/groups/default/artifacts/xjoinindexsynchronizer.test-index-synchronizer-test-custom-image.1234"]
 			Expect(count).To(Equal(1))
 		})
 
-		It("Should delete the Elasticsearch pipeline", func() {
+		It("Should delete the Elasticsearch synchronizer", func() {
 			dataSourceName := "testdatasource"
 			datasourceReconciler := DatasourceTestReconciler{
 				Namespace: namespace,
@@ -797,8 +797,8 @@ var _ = Describe("XJoinIndexPipeline", func() {
 			datasourceReconciler.ReconcileNew()
 			createdDataSource := datasourceReconciler.ReconcileValid()
 
-			name := "test-index-pipeline"
-			reconciler := XJoinIndexPipelineTestReconciler{
+			name := "test-index-synchronizer"
+			reconciler := XJoinIndexSynchronizerTestReconciler{
 				Namespace:      namespace,
 				Name:           name,
 				ConfigFileName: "xjoinindex-with-json-field",
@@ -809,17 +809,17 @@ var _ = Describe("XJoinIndexPipeline", func() {
 					ApiCurioResponseFilename: "datasource-latest-version",
 				}},
 			}
-			createdIndexPipeline := reconciler.ReconcileNew()
+			createdIndexSynchronizer := reconciler.ReconcileNew()
 
-			err := k8sClient.Delete(context.Background(), &createdIndexPipeline)
+			err := k8sClient.Delete(context.Background(), &createdIndexSynchronizer)
 			checkError(err)
 			reconciler.ReconcileDelete()
 
 			info := httpmock.GetCallCountInfo()
-			count := info["GET http://localhost:9200/_ingest/pipeline/xjoinindexpipeline.test-index-pipeline.1234"]
+			count := info["GET http://localhost:9200/_ingest/synchronizer/xjoinindexsynchronizer.test-index-synchronizer.1234"]
 			Expect(count).To(Equal(1))
 
-			count = info["DELETE http://localhost:9200/_ingest/pipeline/xjoinindexpipeline.test-index-pipeline.1234"]
+			count = info["DELETE http://localhost:9200/_ingest/synchronizer/xjoinindexsynchronizer.test-index-synchronizer.1234"]
 			Expect(count).To(Equal(1))
 		})
 	})
