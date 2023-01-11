@@ -8,8 +8,8 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/redhatinsights/xjoin-go-lib/pkg/utils"
-	xjoin "github.com/redhatinsights/xjoin-operator/api/v1alpha1"
-	logger "github.com/redhatinsights/xjoin-operator/controllers/log"
+	xjoin "github.com/thearifismail/xjoin-operator/api/v1alpha1"
+	logger "github.com/thearifismail/xjoin-operator/controllers/log"
 	corev1 "k8s.io/api/core/v1"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

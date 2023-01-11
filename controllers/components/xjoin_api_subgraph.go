@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
-	"github.com/redhatinsights/xjoin-operator/controllers/common"
-	"github.com/redhatinsights/xjoin-operator/controllers/schemaregistry"
+	"github.com/thearifismail/xjoin-operator/controllers/common"
+	"github.com/thearifismail/xjoin-operator/controllers/schemaregistry"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

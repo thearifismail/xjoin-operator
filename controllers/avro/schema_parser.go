@@ -10,10 +10,10 @@ import (
 
 	"github.com/go-errors/errors"
 	. "github.com/redhatinsights/xjoin-go-lib/pkg/avro"
-	"github.com/redhatinsights/xjoin-operator/controllers/common"
-	"github.com/redhatinsights/xjoin-operator/controllers/log"
-	"github.com/redhatinsights/xjoin-operator/controllers/schemaregistry"
 	"github.com/riferrei/srclient"
+	"github.com/thearifismail/xjoin-operator/controllers/common"
+	"github.com/thearifismail/xjoin-operator/controllers/log"
+	"github.com/thearifismail/xjoin-operator/controllers/schemaregistry"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

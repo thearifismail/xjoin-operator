@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
-	"github.com/redhatinsights/xjoin-operator/controllers/elasticsearch"
+	"github.com/thearifismail/xjoin-operator/controllers/elasticsearch"
 )
 
 type ElasticsearchSynchronizer struct {

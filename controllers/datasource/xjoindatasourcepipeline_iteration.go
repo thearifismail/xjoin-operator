@@ -1,9 +1,9 @@
 package datasource
 
 import (
-	"github.com/redhatinsights/xjoin-operator/api/v1alpha1"
-	"github.com/redhatinsights/xjoin-operator/controllers/common"
-	"github.com/redhatinsights/xjoin-operator/controllers/parameters"
+	"github.com/thearifismail/xjoin-operator/api/v1alpha1"
+	"github.com/thearifismail/xjoin-operator/controllers/common"
+	"github.com/thearifismail/xjoin-operator/controllers/parameters"
 )
 
 type XJoinDataSourceSynchronizerIteration struct {

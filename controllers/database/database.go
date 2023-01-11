@@ -16,8 +16,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"github.com/redhatinsights/xjoin-operator/controllers/data"
-	logger "github.com/redhatinsights/xjoin-operator/controllers/log"
+	"github.com/thearifismail/xjoin-operator/controllers/data"
+	logger "github.com/thearifismail/xjoin-operator/controllers/log"
 )
 
 var log = logger.NewLogger("database")

@@ -6,8 +6,8 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	. "github.com/onsi/gomega"
-	"github.com/redhatinsights/xjoin-operator/api/v1alpha1"
-	"github.com/redhatinsights/xjoin-operator/controllers/common"
+	"github.com/thearifismail/xjoin-operator/api/v1alpha1"
+	"github.com/thearifismail/xjoin-operator/controllers/common"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"

@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/elastic/go-elasticsearch/v7/esapi"
-	"github.com/redhatinsights/xjoin-go-lib/pkg/utils"
-	"github.com/redhatinsights/xjoin-operator/controllers/data"
 	"io/ioutil"
 	"math"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/redhatinsights/xjoin-go-lib/pkg/utils"
+	"github.com/thearifismail/xjoin-operator/controllers/data"
 )
 
 func (es *ElasticSearch) GetHostsByIds(index string, hostIds []string) ([]data.Host, error) {

@@ -13,8 +13,8 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/redhatinsights/xjoin-go-lib/pkg/utils"
-	"github.com/redhatinsights/xjoin-operator/controllers/database"
-	"github.com/redhatinsights/xjoin-operator/controllers/metrics"
+	"github.com/thearifismail/xjoin-operator/controllers/database"
+	"github.com/thearifismail/xjoin-operator/controllers/metrics"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 

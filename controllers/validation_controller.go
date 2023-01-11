@@ -6,9 +6,11 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/go-logr/logr"
-	xjoin "github.com/redhatinsights/xjoin-operator/api/v1alpha1"
-	logger "github.com/redhatinsights/xjoin-operator/controllers/log"
-	. "github.com/redhatinsights/xjoin-operator/controllers/synchronizer"
+	xjoin "github.com/thearifismail/xjoin-operator/api/v1alpha1"
+	logger "github.com/thearifismail/xjoin-operator/controllers/log"
+
+	. "github.com/thearifismail/xjoin-operator/controllers/synchronizer"
+	// . "github.com/thearifismail/xjoin-operator/controllers/pipeline"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"

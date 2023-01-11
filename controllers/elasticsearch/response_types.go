@@ -1,6 +1,6 @@
 package elasticsearch
 
-import "github.com/redhatinsights/xjoin-operator/controllers/data"
+import "github.com/thearifismail/xjoin-operator/controllers/data"
 
 type SearchIDsResponse struct {
 	Hits struct {

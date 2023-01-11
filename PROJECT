@@ -1,25 +1,25 @@
 domain: cloud.redhat.com
 layout: go.kubebuilder.io/v2
 projectName: xjoin-operator
-repo: github.com/redhatinsights/xjoin-operator
+repo: github.com/thearifismail/xjoin-operator
 resources:
 - controller: true
   domain: cloud.redhat.com
   group: xjoin
   kind: XJoinSynchronizer
-  path: github.com/redhatinsights/xjoin-operator/api/v1alpha1
+  path: github.com/thearifismail/xjoin-operator/api/v1alpha1
   version: v1alpha1
 - controller: true
   domain: cloud.redhat.com
   group: xjoin
   kind: XJoinDataSource
-  path: github.com/redhatinsights/xjoin-operator/api/v1alpha1
+  path: github.com/thearifismail/xjoin-operator/api/v1alpha1
   version: v1alpha1
 - controller: true
   domain: cloud.redhat.com
   group: xjoin
   kind: XJoinDataSourceSynchronizer
-  path: github.com/redhatinsights/xjoin-operator/api/v1alpha1
+  path: github.com/thearifismail/xjoin-operator/api/v1alpha1
   version: v1alpha1
 version: "3"
 plugins:

@@ -1,9 +1,10 @@
 package components
 
 import (
-	"github.com/go-errors/errors"
-	"github.com/redhatinsights/xjoin-operator/controllers/kafka"
 	"strings"
+
+	"github.com/go-errors/errors"
+	"github.com/thearifismail/xjoin-operator/controllers/kafka"
 )
 
 type DebeziumConnector struct {

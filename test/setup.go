@@ -1,14 +1,15 @@
 package test
 
 import (
-	xjoin "github.com/redhatinsights/xjoin-operator/api/v1alpha1"
-	"github.com/redhatinsights/xjoin-operator/controllers/database"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
+
+	xjoin "github.com/thearifismail/xjoin-operator/api/v1alpha1"
+	"github.com/thearifismail/xjoin-operator/controllers/database"
 
 	. "github.com/onsi/ginkgo"
 

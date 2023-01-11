@@ -11,7 +11,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/go-errors/errors"
-	logger "github.com/redhatinsights/xjoin-operator/controllers/log"
+	logger "github.com/thearifismail/xjoin-operator/controllers/log"
 )
 
 var log = logger.NewLogger("elasticsearch")

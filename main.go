@@ -21,9 +21,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/redhatinsights/xjoin-operator/controllers"
-	"github.com/redhatinsights/xjoin-operator/controllers/log"
-	"github.com/redhatinsights/xjoin-operator/controllers/metrics"
+	"github.com/thearifismail/xjoin-operator/controllers"
+	"github.com/thearifismail/xjoin-operator/controllers/log"
+	"github.com/thearifismail/xjoin-operator/controllers/metrics"
 	k8runtime "k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	k8slog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	xjoinv1alpha1 "github.com/redhatinsights/xjoin-operator/api/v1alpha1"
+	xjoinv1alpha1 "github.com/thearifismail/xjoin-operator/api/v1alpha1"
 	// +kubebuilder:scaffold:imports
 	_ "net/http/pprof"
 )

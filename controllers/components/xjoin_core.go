@@ -2,11 +2,12 @@ package components
 
 import (
 	"context"
+	"strings"
+
 	"github.com/go-errors/errors"
-	"github.com/redhatinsights/xjoin-operator/controllers/common"
+	"github.com/thearifismail/xjoin-operator/controllers/common"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 type XJoinCore struct {

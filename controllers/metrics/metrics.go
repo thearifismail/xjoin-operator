@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-	logger "github.com/redhatinsights/xjoin-operator/controllers/log"
+	logger "github.com/thearifismail/xjoin-operator/controllers/log"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 

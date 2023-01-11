@@ -11,9 +11,9 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/redhatinsights/xjoin-go-lib/pkg/utils"
-	xjoin "github.com/redhatinsights/xjoin-operator/api/v1alpha1"
-	"github.com/redhatinsights/xjoin-operator/controllers/data"
-	"github.com/redhatinsights/xjoin-operator/controllers/metrics"
+	xjoin "github.com/thearifismail/xjoin-operator/api/v1alpha1"
+	"github.com/thearifismail/xjoin-operator/controllers/data"
+	"github.com/thearifismail/xjoin-operator/controllers/metrics"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

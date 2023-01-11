@@ -3,9 +3,9 @@ package datasource
 import (
 	"github.com/go-errors/errors"
 	"github.com/redhatinsights/xjoin-go-lib/pkg/utils"
-	"github.com/redhatinsights/xjoin-operator/api/v1alpha1"
-	"github.com/redhatinsights/xjoin-operator/controllers/common"
-	"github.com/redhatinsights/xjoin-operator/controllers/parameters"
+	"github.com/thearifismail/xjoin-operator/api/v1alpha1"
+	"github.com/thearifismail/xjoin-operator/controllers/common"
+	"github.com/thearifismail/xjoin-operator/controllers/parameters"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )

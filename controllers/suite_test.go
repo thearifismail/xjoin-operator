@@ -25,7 +25,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	xjoinApi "github.com/redhatinsights/xjoin-operator/api/v1alpha1"
+	xjoinApi "github.com/thearifismail/xjoin-operator/api/v1alpha1"
 	// +kubebuilder:scaffold:imports
 )
 

@@ -2,11 +2,12 @@ package components
 
 import (
 	"encoding/json"
+	"strings"
+
 	"github.com/go-errors/errors"
 	. "github.com/redhatinsights/xjoin-go-lib/pkg/avro"
-	"github.com/redhatinsights/xjoin-operator/controllers/schemaregistry"
 	"github.com/riferrei/srclient"
-	"strings"
+	"github.com/thearifismail/xjoin-operator/controllers/schemaregistry"
 )
 
 type AvroSchema struct {

@@ -54,5 +54,5 @@ spec:
   maturity: alpha
   provider:
     name: Red Hat
-    url: https://github.com/redhatinsights/xjoin-operator
+    url: https://github.com/thearifismail/xjoin-operator
   version: 0.0.0

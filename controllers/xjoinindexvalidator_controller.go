@@ -2,15 +2,17 @@ package controllers
 
 import (
 	"context"
+	"time"
+
 	"github.com/go-errors/errors"
 	"github.com/go-logr/logr"
-	xjoin "github.com/redhatinsights/xjoin-operator/api/v1alpha1"
-	"github.com/redhatinsights/xjoin-operator/controllers/common"
-	"github.com/redhatinsights/xjoin-operator/controllers/config"
-	. "github.com/redhatinsights/xjoin-operator/controllers/index"
-	xjoinlogger "github.com/redhatinsights/xjoin-operator/controllers/log"
-	"github.com/redhatinsights/xjoin-operator/controllers/parameters"
-	k8sUtils "github.com/redhatinsights/xjoin-operator/controllers/utils"
+	xjoin "github.com/thearifismail/xjoin-operator/api/v1alpha1"
+	"github.com/thearifismail/xjoin-operator/controllers/common"
+	"github.com/thearifismail/xjoin-operator/controllers/config"
+	. "github.com/thearifismail/xjoin-operator/controllers/index"
+	xjoinlogger "github.com/thearifismail/xjoin-operator/controllers/log"
+	"github.com/thearifismail/xjoin-operator/controllers/parameters"
+	k8sUtils "github.com/thearifismail/xjoin-operator/controllers/utils"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -20,7 +22,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"time"
 )
 
 const xjoinindexValidatorFinalizer = "finalizer.xjoin.indexvalidator.cloud.redhat.com"

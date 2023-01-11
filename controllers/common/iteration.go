@@ -9,7 +9,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/google/go-cmp/cmp"
 	"github.com/redhatinsights/xjoin-go-lib/pkg/utils"
-	xjoinlogger "github.com/redhatinsights/xjoin-operator/controllers/log"
+	xjoinlogger "github.com/thearifismail/xjoin-operator/controllers/log"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

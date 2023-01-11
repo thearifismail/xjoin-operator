@@ -2,7 +2,7 @@ package index
 
 import (
 	"github.com/go-errors/errors"
-	"github.com/redhatinsights/xjoin-operator/controllers/common"
+	"github.com/thearifismail/xjoin-operator/controllers/common"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 

@@ -2,9 +2,11 @@ package controllers
 
 import (
 	"context"
+	"time"
+
 	"github.com/jarcoal/httpmock"
 	. "github.com/onsi/gomega"
-	"github.com/redhatinsights/xjoin-operator/api/v1alpha1"
+	"github.com/thearifismail/xjoin-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -12,7 +14,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"time"
 )
 
 type DatasourceTestReconciler struct {

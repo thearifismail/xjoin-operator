@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
-	logger "github.com/redhatinsights/xjoin-operator/controllers/log"
-	k8sUtils "github.com/redhatinsights/xjoin-operator/controllers/utils"
+	logger "github.com/thearifismail/xjoin-operator/controllers/log"
+	k8sUtils "github.com/thearifismail/xjoin-operator/controllers/utils"
 )
 
 type ReconcilerMethods interface {

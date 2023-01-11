@@ -9,9 +9,9 @@ import (
 
 	"github.com/go-errors/errors"
 	xjoinUtils "github.com/redhatinsights/xjoin-go-lib/pkg/utils"
-	xjoin "github.com/redhatinsights/xjoin-operator/api/v1alpha1"
-	logger "github.com/redhatinsights/xjoin-operator/controllers/log"
-	k8sUtils "github.com/redhatinsights/xjoin-operator/controllers/utils"
+	xjoin "github.com/thearifismail/xjoin-operator/api/v1alpha1"
+	logger "github.com/thearifismail/xjoin-operator/controllers/log"
+	k8sUtils "github.com/thearifismail/xjoin-operator/controllers/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"

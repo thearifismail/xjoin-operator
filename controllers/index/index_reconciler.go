@@ -2,11 +2,11 @@ package index
 
 import (
 	"github.com/go-errors/errors"
-	"github.com/redhatinsights/xjoin-operator/controllers/components"
-	"github.com/redhatinsights/xjoin-operator/controllers/config"
-	"github.com/redhatinsights/xjoin-operator/controllers/elasticsearch"
-	"github.com/redhatinsights/xjoin-operator/controllers/kafka"
-	"github.com/redhatinsights/xjoin-operator/controllers/schemaregistry"
+	"github.com/thearifismail/xjoin-operator/controllers/components"
+	"github.com/thearifismail/xjoin-operator/controllers/config"
+	"github.com/thearifismail/xjoin-operator/controllers/elasticsearch"
+	"github.com/thearifismail/xjoin-operator/controllers/kafka"
+	"github.com/thearifismail/xjoin-operator/controllers/schemaregistry"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 

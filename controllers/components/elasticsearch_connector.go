@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/go-errors/errors"
-	"github.com/redhatinsights/xjoin-operator/controllers/kafka"
+	"github.com/thearifismail/xjoin-operator/controllers/kafka"
 )
 
 type ElasticsearchConnector struct {

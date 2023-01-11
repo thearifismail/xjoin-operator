@@ -1,4 +1,4 @@
-module github.com/redhatinsights/xjoin-operator
+module github.com/thearifismail/xjoin-operator
 
 go 1.17
 

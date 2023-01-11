@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/redhatinsights/xjoin-operator/controllers/config"
-	logger "github.com/redhatinsights/xjoin-operator/controllers/log"
+	"github.com/thearifismail/xjoin-operator/controllers/config"
+	logger "github.com/thearifismail/xjoin-operator/controllers/log"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"

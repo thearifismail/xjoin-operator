@@ -1,6 +1,6 @@
 package synchronizer
 
-import "github.com/redhatinsights/xjoin-operator/controllers/metrics"
+import "github.com/thearifismail/xjoin-operator/controllers/metrics"
 
 func (i *ReconcileIteration) ProbeStartingInitialSync() {
 	i.Log.Info("New synchronizer version", "version", i.Instance.Status.SynchronizerVersion)

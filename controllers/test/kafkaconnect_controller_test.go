@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/redhatinsights/xjoin-operator/test"
+	"github.com/thearifismail/xjoin-operator/test"
 	"gopkg.in/h2non/gock.v1"
 )
 

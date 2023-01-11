@@ -3,14 +3,15 @@ package config
 import (
 	"context"
 	"fmt"
-	"github.com/go-errors/errors"
-	"github.com/redhatinsights/xjoin-operator/api/v1alpha1"
-	logger "github.com/redhatinsights/xjoin-operator/controllers/log"
-	k8sUtils "github.com/redhatinsights/xjoin-operator/controllers/utils"
-	v1 "k8s.io/api/core/v1"
 	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
+
+	"github.com/go-errors/errors"
+	"github.com/thearifismail/xjoin-operator/api/v1alpha1"
+	logger "github.com/thearifismail/xjoin-operator/controllers/log"
+	k8sUtils "github.com/thearifismail/xjoin-operator/controllers/utils"
+	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Spec interface{}

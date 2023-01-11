@@ -3,7 +3,7 @@ package parameters
 import (
 	"reflect"
 
-	. "github.com/redhatinsights/xjoin-operator/controllers/config"
+	. "github.com/thearifismail/xjoin-operator/controllers/config"
 )
 
 type IndexParameters struct {
