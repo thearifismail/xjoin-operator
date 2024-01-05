@@ -55,6 +55,7 @@ type StrimziTopics struct {
 	Client                client.Client
 	Test                  bool
 	Context               context.Context
+	Ephemeral             bool
 }
 
 type ManagedTopicsOptions struct {
@@ -65,6 +66,7 @@ type ManagedTopicsOptions struct {
 	AdminURL           string
 	TokenURL           string
 	TopicParameters    TopicParameters
+	Ephemeral          bool
 }
 
 type ManagedTopics struct {

@@ -15,6 +15,13 @@ else
   echo "Installing all the components specified in setup-clowder.sh"
 fi
 
+# check of for bonfire
+if ! command -v bonfire &> /dev/null
+then
+    echo "bonfire could not be found"
+    exit 1
+fi
+
 # make sure the internal network is reachable
 RESPONSE_CODE=$(curl --write-out %{http_code} --silent --output /dev/null app-interface.apps.appsrep05ue1.zqxk.p1.openshiftapps.com)
 
@@ -123,6 +130,11 @@ kubectl create ns test
 # kube_setup.sh
 print_message "Running kube-setup.sh"
 CURRENT_DIR=$(pwd)
+
+if [ -d "/tmp/kubesetup" ]; 
+  then rm -Rf /tmp/kubesetup; 
+fi
+
 mkdir /tmp/kubesetup
 cd /tmp/kubesetup || exit 1
 START_TIME=`date +%s`
@@ -143,7 +155,7 @@ if [ -z "$KUBE_SETUP_PATH" ]; then
   /tmp/kubesetup/kube_setup.sh
 fi
 
-rm -r /tmp/kubesetup
+# rm -r /tmp/kubesetup
 cd "$CURRENT_DIR" || exit 1
 
 kubectl set env deployment/strimzi-cluster-operator -n strimzi STRIMZI_IMAGE_PULL_SECRETS=cloudservices-pull-secret
@@ -188,6 +200,7 @@ print_message "Setting up host-inventory"
 bonfire process host-inventory -n test --no-get-dependencies --remove-dependencies all | oc apply -f - -n test
 
 # xjoin resources
+print_message "Setting up xjoin"
 bonfire process xjoin -n test --no-get-dependencies -p xjoin-search/ES_MEMORY_REQUESTS=256Mi -p xjoin-search/ES_MEMORY_LIMITS=512Mi -p xjoin-search/ES_JAVA_OPTS="-Xms128m -Xmx128m" | oc apply -f - -n test
 print_message "xjoin deployed!!!"
 

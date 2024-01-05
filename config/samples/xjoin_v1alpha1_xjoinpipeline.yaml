@@ -11,3 +11,4 @@ spec:
   managedKafkaSecretName: ephem-managed-kafka
   managedKafkaSecretNamespace: test
   pause: false
+  ephemeral: true

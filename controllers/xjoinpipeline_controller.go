@@ -172,6 +172,7 @@ func (r *XJoinPipelineReconciler) setup(reqLogger xjoinlogger.Log, request ctrl.
 			Test:                  r.Test,
 			Context:               ctx,
 			ResourceNamePrefix:    i.Parameters.ResourceNamePrefix.String(),
+			Ephemeral:             i.Parameters.Ephemeral.Bool(),
 		}
 	}
 

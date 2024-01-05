@@ -86,6 +86,7 @@ func (r *KafkaConnectReconciler) Setup(reqLogger logger.Log, request ctrl.Reques
 		Test:                  r.Test,
 		Context:               ctx,
 		ResourceNamePrefix:    r.parameters.ResourceNamePrefix.String(),
+		Ephemeral:             r.parameters.Ephemeral.Bool(),
 	}
 
 	r.kafkaConnectors = &kafka.StrimziConnectors{

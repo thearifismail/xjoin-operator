@@ -527,6 +527,7 @@ func NewXJoinConfiguration() Parameters {
 			ConfigMapKey: "debezium.connector.config",
 			DefaultValue: `{
 				"tasks.max": "{{.DebeziumTasksMax}}",
+				"topics": "{{.Topic}}",
 				"database.hostname": "{{.HBIDBHost}}",
 				"database.port": "{{.HBIDBPort}}",
 				"database.user": "{{.HBIDBUser}}",

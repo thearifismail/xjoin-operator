@@ -4,6 +4,7 @@ data:
   debezium.connector.template: >
     {
       "tasks.max": "{{.DebeziumTasksMax}}",
+      "topics": "{{.Topic}}",
       "database.hostname": "{{.DatabaseHostname}}",
       "database.port": "{{.DatabasePort}}",
       "database.user": "{{.DatabaseUsername}}",

@@ -28,7 +28,11 @@ var topicsGroupVersionKind = schema.GroupVersionKind{
 }
 
 func (t *StrimziTopics) TopicName(pipelineVersion string) string {
-	return fmt.Sprintf(t.ResourceNamePrefix + "." + pipelineVersion + ".public.hosts")
+	if t.Ephemeral == true {
+		return fmt.Sprintf("env-" + t.KafkaClusterNamespace + "." + t.ResourceNamePrefix + "." + pipelineVersion + ".public.hosts")
+	} else {
+		return fmt.Sprintf(t.ResourceNamePrefix + "." + pipelineVersion + ".public.hosts")
+	}
 }
 
 func (t *StrimziTopics) createTopicByFullName(topicName string, dryRun bool) (*unstructured.Unstructured, error) {
@@ -38,8 +42,9 @@ func (t *StrimziTopics) createTopicByFullName(topicName string, dryRun bool) (*u
 			"name":      topicName,
 			"namespace": t.KafkaClusterNamespace,
 			"labels": map[string]interface{}{
-				"strimzi.io/cluster":   t.KafkaCluster,
-				"resource.name.prefix": t.ResourceNamePrefix,
+				"strimzi.io/cluster": t.KafkaCluster,
+				// "resource.name.prefix": t.ResourceNamePrefix,
+				"resource.name.prefix": "env-" + t.KafkaClusterNamespace + "." + t.ResourceNamePrefix,
 			},
 		},
 		"spec": map[string]interface{}{
