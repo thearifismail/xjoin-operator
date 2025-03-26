@@ -337,6 +337,9 @@ parameters:
                 "bios_version": {
                   "type": "keyword"
                 },
+                "bios_release_date": {
+                  "type": "keyword"
+                },
                 "cpu_flags": {
                   "type": "keyword"
                 },
@@ -392,6 +395,9 @@ parameters:
                 "last_boot_time": {
                   "type": "keyword"
                 },
+                "running_processes": {
+                  "type": "keyword"
+                },
                 "subscription_status": {
                   "type": "keyword"
                 },
@@ -406,6 +412,15 @@ parameters:
                 },
                 "cloud_provider": {
                   "type": "keyword"
+                },
+                "public_ipv4_addresses": {
+                  "type": "keyword"
+                },
+                "public_dns": {
+                  "type": "keyword"
+                },
+                "yum_repos": {
+                  "type": "nested"
                 },
                 "dnf_modules": {
                   "type": "nested"
@@ -423,6 +438,9 @@ parameters:
                   "type": "keyword"
                 },
                 "installed_packages": {
+                  "type": "keyword"
+                },
+                "installed_packages_delta": {
                   "type": "keyword"
                 },
                 "gpg_pubkeys": {
@@ -491,6 +509,9 @@ parameters:
                   "type": "object",
                   "properties": {
                     "version": {
+                      "type": "keyword"
+                    },
+                    "environment_ids": {
                       "type": "keyword"
                     }
                   }
@@ -562,16 +583,11 @@ parameters:
                         },
                         "image_digest": {
                           "type": "keyword"
-                        }
-                      }
-                    },
-                    "cachedUpdate": {
-                      "type": "object",
-                      "properties": {
-                        "image": {
+                        },
+                        "cached_image": {
                           "type": "keyword"
                         },
-                        "image_digest": {
+                        "cached_image_digest": {
                           "type": "keyword"
                         }
                       }
@@ -584,6 +600,12 @@ parameters:
                         },
                         "image_digest": {
                           "type": "keyword"
+                        },
+                        "cached_image": {
+                          "type": "keyword"
+                        },
+                        "cached_image_digest": {
+                          "type": "keyword"
                         }
                       }
                     },
@@ -594,6 +616,192 @@ parameters:
                           "type": "keyword"
                         },
                         "image_digest": {
+                          "type": "keyword"
+                        },
+                        "cached_image": {
+                          "type": "keyword"
+                        },
+                        "cached_image_digest": {
+                          "type": "keyword"
+                        }
+                      }
+                    }
+                  }
+                },
+                "conversions": {
+                  "type": "object",
+                  "properties": {
+                    "activity": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "rhel_ai": {
+                  "type": "object",
+                  "properties": {
+                    "variant": {
+                      "type": "keyword"
+                    },
+                    "rhel_ai_version_id": {
+                      "type": "keyword"
+                    },
+                    "amd_gpu_models": {
+                      "type": "keyword"
+                    },
+                    "intel_gaudi_hpu_models": {
+                      "type": "keyword"
+                    },
+                    "nvidia_gpu_models": {
+                      "type": "keyword"
+                    }
+                  }
+                },
+                "third_party_services": {
+                  "type": "object",
+                  "properties": {
+                    "crowdstrike": {
+                      "type": "object",
+                      "properties": {
+                        "falcon_aid": {
+                          "type": "keyword"
+                        },
+                        "falcon_backend": {
+                          "type": "keyword"
+                        },
+                        "falcon_version": {
+                          "type": "keyword"
+                        }
+                      }
+                    }
+                  }
+                },
+                "image_builder": {
+                  "type": "object",
+                  "properties": {
+                    "compliance_policy_id": {
+                      "type": "keyword"
+                    },
+                    "compliance_profile_id": {
+                      "type": "keyword"
+                    }
+                  }
+                },
+                "workloads": {
+                  "type": "object",
+                  "properties": {
+                    "ansible": {
+                      "type": "object",
+                      "properties": {
+                        "controller_version": {
+                          "type": "keyword"
+                        },
+                        "hub_version": {
+                          "type": "keyword"
+                        },
+                        "catalog_worker_version": {
+                          "type": "keyword"
+                        },
+                        "sso_version": {
+                          "type": "keyword"
+                        }
+                      }
+                    },
+                    "crowdstrike": {
+                      "type": "object",
+                      "properties": {
+                        "falcon_aid": {
+                          "type": "keyword"
+                        },
+                        "falcon_backend": {
+                          "type": "keyword"
+                        },
+                        "falcon_version": {
+                          "type": "keyword"
+                        }
+                      }
+                    },
+                    "ibm_db2": {
+                      "type": "object",
+                      "properties": {
+                        "is_running": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "intersystems": {
+                      "type": "object",
+                      "properties": {
+                        "is_intersystems": {
+                          "type": "boolean"
+                        },
+                        "running_instances": {
+                          "type": "nested"
+                        }
+                      }
+                    },
+                    "mssql": {
+                      "type": "object",
+                      "properties": {
+                        "version": {
+                          "type": "keyword"
+                        }
+                      }
+                    },
+                    "oracle_db": {
+                      "type": "object",
+                      "properties": {
+                        "is_running": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "rhel_ai": {
+                      "type": "object",
+                      "properties": {
+                        "variant": {
+                          "type": "keyword"
+                        },
+                        "rhel_ai_version_id": {
+                          "type": "keyword"
+                        },
+                        "gpu_models": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "keyword"
+                            },
+                            "vendor": {
+                              "type": "keyword"
+                            },
+                            "memory": {
+                              "type": "keyword"
+                            },
+                            "count": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "ai_models": {
+                          "type": "keyword"
+                        },
+                        "free_disk_storage": {
+                          "type": "keyword"
+                        }
+                      }
+                    },
+                    "sap": {
+                      "type": "object",
+                      "properties": {
+                        "sap_system": {
+                          "type": "boolean"
+                        },
+                        "sids": {
+                          "type": "keyword"
+                        },
+                        "instance_number": {
+                          "type": "keyword"
+                        },
+                        "version": {
                           "type": "keyword"
                         }
                       }
